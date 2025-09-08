@@ -47,8 +47,15 @@ repos:
         description: Format Terraform files
         args: ['--args=-recursive']
 
-  # Note: MyPy type checking is disabled in pre-commit due to module conflicts
-  # It still runs in GitHub Actions CI for full validation
+  # Python type checking (matches CI pipeline)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        description: Static type checking with mypy
+        args: ['--ignore-missing-imports', '--show-error-codes']
+        files: '^aws_ssm_fetcher/.*\.py$'
+        additional_dependencies: [types-requests, types-PyYAML]
 
   # Secrets scanning
   - repo: https://github.com/Yelp/detect-secrets
