@@ -432,7 +432,7 @@ jobs:
         echo "✅ Cleanup completed (handled by S3 lifecycle policies)"
 
   notify-results:
-    needs: execute-pipeline
+    needs: [check-infrastructure, execute-pipeline]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -442,8 +442,16 @@ jobs:
         echo "✅ Scheduled execution completed successfully"
         # Add Slack/email notification here if needed
 
+    - name: Notify Infrastructure Missing
+      if: needs.check-infrastructure.outputs.infrastructure-exists == 'false'
+      run: |
+        echo "ℹ️ Scheduled execution skipped - infrastructure not deployed"
+        echo "This is expected behavior when AWS infrastructure hasn't been deployed yet."
+        echo "To deploy infrastructure: gh workflow run 'Terraform Deployment' --ref main"
+        # Add informational notification here if needed
+
     - name: Notify Failure  
-      if: needs.execute-pipeline.result != 'success'
+      if: needs.execute-pipeline.result == 'failure'
       run: |
         echo "❌ Scheduled execution failed"
         # Add Slack/email notification here if needed
