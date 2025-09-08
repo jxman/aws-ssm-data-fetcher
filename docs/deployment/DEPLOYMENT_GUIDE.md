@@ -1,182 +1,118 @@
-# AWS Lambda Deployment Guide
+# AWS SSM Data Fetcher - Deployment Guide
 
-This guide explains how to deploy the AWS SSM data fetcher as a Lambda function that runs daily and uploads data to S3.
+⚠️ **IMPORTANT**: This project now uses **GitHub Actions for all deployments**. Manual deployment methods are deprecated.
 
-## Architecture Overview
+**👉 For production deployment, see: [PRODUCTION_DEPLOYMENT_GUIDE.md](../../PRODUCTION_DEPLOYMENT_GUIDE.md)**
+
+## Modern Architecture Overview
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   EventBridge   │───▶│  Lambda Function │───▶│   S3 Bucket     │
-│   (Daily Cron)  │    │  (Data Fetcher)  │    │  (Excel & JSON) │
+│   Data Fetcher  │───▶│   Processor     │───▶│Report Generator │
+│   Lambda        │    │   Lambda        │    │   Lambda        │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │  SSM Parameters │
-                       │ (AWS Services)  │
-                       └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+                    ┌─────────────────┐
+                    │  Shared Layer   │
+                    │ (Core Modules)  │
+                    └─────────────────┘
+                                 │
+                                 ▼
+           ┌─────────────────────────────────────────┐
+           │         Step Functions Pipeline         │
+           │     S3 • CloudWatch • Monitoring       │
+           │        GitHub Actions CI/CD             │
+           └─────────────────────────────────────────┘
 ```
 
-## Prerequisites
+## 🚀 Quick Start (Automated Deployment)
 
-1. **AWS CLI configured** with appropriate permissions
-2. **Python 3.9+** for local testing
-3. **S3 bucket** for storing output files
-4. **IAM permissions** for Lambda to access SSM and S3
+### Prerequisites
+- Access to AWS account with admin permissions
+- GitHub repository access: `jxman/aws-ssm-data-fetcher`
+- AWS CLI configured (for initial OIDC setup only)
 
-## Step 1: Create S3 Bucket
-
+### 1. Deploy Infrastructure
 ```bash
-# Create S3 bucket for data storage
-aws s3 mb s3://your-aws-data-bucket
+# All deployments now use GitHub Actions
+gh workflow run "Terraform Deployment" --ref main -f environment=prod
 
-# Enable versioning (optional)
-aws s3api put-bucket-versioning \
-    --bucket your-aws-data-bucket \
-    --versioning-configuration Status=Enabled
+# Monitor deployment
+gh run list --limit 5
+gh run view [RUN_ID] --web
 ```
 
-## Step 2: Create IAM Role for Lambda
-
-Create `lambda-role-policy.json`:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "arn:aws:logs:*:*:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ssm:GetParameter",
-                "ssm:GetParameters"
-            ],
-            "Resource": "arn:aws:ssm:*:*:parameter/aws/service/global-infrastructure/*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:PutObject",
-                "s3:PutObjectAcl"
-            ],
-            "Resource": "arn:aws:s3:::your-aws-data-bucket/*"
-        }
-    ]
-}
-```
-
-Create the IAM role:
-
+### 2. Execute Pipeline
 ```bash
-# Create trust policy
-cat > lambda-trust-policy.json << EOF
-{
-    "Version": "2012-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "lambda.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-}
-EOF
+# Run scheduled execution
+gh workflow run "Scheduled Lambda Execution" --ref main -f environment=prod
 
-# Create IAM role
-aws iam create-role \
-    --role-name AWSSSMDataFetcherRole \
-    --assume-role-policy-document file://lambda-trust-policy.json
-
-# Attach policy
-aws iam put-role-policy \
-    --role-name AWSSSMDataFetcherRole \
-    --policy-name AWSSSMDataFetcherPolicy \
-    --policy-document file://lambda-role-policy.json
+# Check results
+gh run view [RUN_ID]
 ```
 
-## Step 3: Package Lambda Function
+---
 
-```bash
-# Create deployment package
-mkdir lambda-deployment
-cp lambda_function.py lambda-deployment/
-cd lambda-deployment
+## 📋 Modern Deployment Process
 
-# Install dependencies
-pip install pandas openpyxl -t .
+### Infrastructure Components
+The GitHub Actions CI/CD pipeline automatically deploys:
 
-# Create deployment package
-zip -r ../aws-ssm-fetcher.zip .
-cd ..
-```
+- **3 Lambda Functions**: Data fetcher, processor, and report generator
+- **1 Shared Layer**: Core modules and common dependencies
+- **Step Functions**: Orchestration pipeline for data processing
+- **S3 Bucket**: Secure storage with lifecycle policies and encryption
+- **CloudWatch**: Comprehensive monitoring, dashboards, and alarms
+- **IAM Roles**: Least-privilege security policies
+- **Dead Letter Queues**: Error handling and retry mechanisms
 
-## Step 4: Deploy Lambda Function
+### Automatic Scheduling
+- **Daily Execution**: Automatically runs at 6 AM UTC
+- **Multi-Environment**: Supports dev, staging, and production
+- **Monitoring**: Real-time execution tracking and notifications
+- **Error Handling**: Automatic retries and failure notifications
 
-```bash
-# Create Lambda function
-aws lambda create-function \
-    --function-name aws-ssm-data-fetcher \
-    --runtime python3.9 \
-    --role arn:aws:iam::YOUR-ACCOUNT-ID:role/AWSSSMDataFetcherRole \
-    --handler lambda_function.lambda_handler \
-    --zip-file fileb://aws-ssm-fetcher.zip \
-    --timeout 300 \
-    --memory-size 512 \
-    --environment Variables='{
-        "BUCKET_NAME": "your-aws-data-bucket"
-    }'
-```
+---
 
-## Step 5: Set Up Daily Schedule
+## 📊 Output Files and Reports
 
-Create EventBridge rule for daily execution:
+### Generated Reports
+The pipeline automatically creates three types of reports:
 
-```bash
-# Create rule for daily execution at 6 AM UTC
-aws events put-rule \
-    --name aws-ssm-daily-fetch \
-    --schedule-expression "cron(0 6 * * ? *)" \
-    --description "Daily AWS SSM data fetch"
+1. **Excel Report** (`aws_regions_services.xlsx`)
+   - Multi-sheet workbook with comprehensive data
+   - Regional services availability matrix
+   - Statistics and analytics
+   - Professional formatting with conditional styling
 
-# Add Lambda as target
-aws events put-targets \
-    --rule aws-ssm-daily-fetch \
-    --targets "Id"="1","Arn"="arn:aws:lambda:us-east-1:YOUR-ACCOUNT-ID:function:aws-ssm-data-fetcher"
+2. **JSON Report** (`aws_regions_services.json`)
+   - Structured data with metadata
+   - API-friendly format
+   - Compact variant for efficient consumption
 
-# Give EventBridge permission to invoke Lambda
-aws lambda add-permission \
-    --function-name aws-ssm-data-fetcher \
-    --statement-id allow-eventbridge \
-    --action lambda:InvokeFunction \
-    --principal events.amazonaws.com \
-    --source-arn arn:aws:events:us-east-1:YOUR-ACCOUNT-ID:rule/aws-ssm-daily-fetch
-```
+3. **CSV Reports** (Multiple formats)
+   - Detailed data export
+   - Summary statistics
+   - Matrix format for analysis
 
-## Step 6: Test the Function
+### Storage and Access
+- **S3 Storage**: Secure, encrypted storage with automatic lifecycle management
+- **Report Retention**: 30-day retention policy for cost optimization
+- **Access Logs**: Complete audit trail for compliance
+- **CloudFront Integration**: Ready for web distribution (optional)
 
-```bash
-# Test manually
-aws lambda invoke \
-    --function-name aws-ssm-data-fetcher \
-    --payload '{"bucket_name": "your-aws-data-bucket"}' \
-    response.json
+---
 
-# Check response
-cat response.json
+## 🏗️ Legacy Manual Deployment (DEPRECATED)
 
-# Verify files in S3
-aws s3 ls s3://your-aws-data-bucket/aws-data/
-```
+⚠️ **DEPRECATED**: The manual deployment steps below are provided for reference only. 
+
+**Current deployment method**: Use GitHub Actions workflows as described in [PRODUCTION_DEPLOYMENT_GUIDE.md](../../PRODUCTION_DEPLOYMENT_GUIDE.md)
+
+<details>
+<summary>Click to view legacy manual deployment instructions</summary>
 
 ## Output Files
 
@@ -261,3 +197,47 @@ aws lambda update-function-code \
 - **VPC**: Consider running Lambda in VPC for additional security
 - **Encryption**: Enable S3 bucket encryption
 - **Access Logs**: Enable S3 access logging for audit trail
+
+</details>
+
+---
+
+## 🔧 Modern Troubleshooting
+
+### Common Issues with GitHub Actions Deployment
+
+1. **Authentication Failures**
+   ```bash
+   # Verify OIDC setup
+   aws iam list-open-id-connect-providers
+   ```
+
+2. **Terraform State Issues**
+   ```bash
+   # Check state bucket
+   aws s3 ls s3://aws-ssm-fetcher-terraform-state-[username]
+   ```
+
+3. **Pipeline Execution Failures**
+   ```bash
+   # View recent workflow runs
+   gh run list --limit 5
+   gh run view [RUN_ID] --log-failed
+   ```
+
+### Getting Help
+
+- **GitHub Issues**: https://github.com/jxman/aws-ssm-data-fetcher/issues
+- **Production Guide**: [PRODUCTION_DEPLOYMENT_GUIDE.md](../../PRODUCTION_DEPLOYMENT_GUIDE.md)
+- **Architecture Documentation**: [../architecture/](../architecture/)
+
+---
+
+## ✅ Next Steps
+
+After reviewing this guide:
+
+1. **Follow the Production Guide**: See [PRODUCTION_DEPLOYMENT_GUIDE.md](../../PRODUCTION_DEPLOYMENT_GUIDE.md) for complete deployment instructions
+2. **Review Architecture**: Understanding the system design in [../architecture/](../architecture/)
+3. **Monitor Operations**: Set up CloudWatch monitoring and alerts
+4. **Plan Maintenance**: Review ongoing operational requirements
