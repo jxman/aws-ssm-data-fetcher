@@ -68,3 +68,24 @@ tmp/
 # *_example.py files should go in examples/
 # utility scripts should go in scripts/ or tools/
 # documentation should go in docs/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+*-plan.out
+*-plan.tfplan
+.terraform.lock.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Allow environment-specific configuration files
+!environments/*.tfvars
+!terraform/environments/*.tfvars
