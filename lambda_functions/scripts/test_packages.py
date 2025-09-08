@@ -101,7 +101,7 @@ def test_lambda_function_import(package_path: str, function_name: str) -> bool:
                     error_type in error_msg
                     for error_type in [
                         "region",
-                        "credentials", 
+                        "credentials",
                         "aws",
                         "boto",
                         "botocore",
@@ -109,7 +109,9 @@ def test_lambda_function_import(package_path: str, function_name: str) -> bool:
                         "auth",
                     ]
                 ):
-                    print(f"    ✅ Import structure OK (AWS config error expected): {e}")
+                    print(
+                        f"    ✅ Import structure OK (AWS config error expected): {e}"
+                    )
                     return True
                 else:
                     print(f"    ❌ Unexpected error during import: {e}")
@@ -286,7 +288,7 @@ def test_mock_execution(package_path: str, function_name: str) -> bool:
                     "aws",
                     "boto",
                     "botocore",
-                    "access", 
+                    "access",
                     "auth",
                     "region",
                     "s3_bucket",
