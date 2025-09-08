@@ -130,13 +130,19 @@ build_shared_layer() {
 
 # Check if virtual environment is activated
 if [ -z "$VIRTUAL_ENV" ]; then
-    echo -e "${YELLOW}⚠️  Virtual environment not detected. Activating .venv...${NC}"
-    if [ -f "$PROJECT_ROOT/.venv/bin/activate" ]; then
+    echo -e "${YELLOW}⚠️  Virtual environment not detected...${NC}"
+    
+    # Check if we're in a CI environment (GitHub Actions, etc.)
+    if [ -n "$GITHUB_ACTIONS" ] || [ -n "$CI" ]; then
+        echo "✅ Detected CI environment - proceeding without virtual environment"
+    elif [ -f "$PROJECT_ROOT/.venv/bin/activate" ]; then
+        echo "   Activating local .venv..."
         source "$PROJECT_ROOT/.venv/bin/activate"
         echo "✅ Activated virtual environment"
     else
         echo "❌ Virtual environment not found at $PROJECT_ROOT/.venv/"
-        echo "   Please run: python3 -m venv .venv && source .venv/bin/activate"
+        echo "   For local development, please run: python3 -m venv .venv && source .venv/bin/activate"
+        echo "   For CI environments, this check will be skipped automatically."
         exit 1
     fi
 fi

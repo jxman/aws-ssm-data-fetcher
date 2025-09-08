@@ -7,7 +7,12 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from ..core.logging import get_logger
-from .base import BaseProcessor, ProcessingContext, ProcessingError, ProcessingValidationError
+from .base import (
+    BaseProcessor,
+    ProcessingContext,
+    ProcessingError,
+    ProcessingValidationError,
+)
 from .data_transformer import DataTransformer
 from .regional_validator import (
     RegionalDataValidator,
