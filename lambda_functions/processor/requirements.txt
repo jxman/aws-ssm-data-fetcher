@@ -1,0 +1,13 @@
+# Processor Lambda Function Dependencies
+# Heavy dependencies specific to processing
+
+# Data processing and analysis
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Statistics and mathematical operations
+scipy>=1.11.0
+
+# Note: Lightweight dependencies come from shared layer:
+# - python-dateutil, structlog
+# Note: boto3/botocore available in Lambda runtime

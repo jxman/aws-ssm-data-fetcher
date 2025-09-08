@@ -1,0 +1,1 @@
+"""Integration tests for AWS SSM Data Fetcher processing pipeline."""

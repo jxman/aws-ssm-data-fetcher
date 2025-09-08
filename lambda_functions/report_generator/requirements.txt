@@ -1,0 +1,14 @@
+# Report Generator Lambda Function Dependencies
+# Heavy dependencies specific to report generation
+
+# Excel generation
+openpyxl>=3.1.0
+et-xmlfile>=1.1.0
+
+# Data manipulation for reports
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Note: Lightweight dependencies come from shared layer:
+# - python-dateutil, structlog
+# Note: boto3/botocore available in Lambda runtime

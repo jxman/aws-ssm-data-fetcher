@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# AWS credentials
+.aws/
+credentials.json
+config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Cache directory
+.cache/
+
+# Output directory (generated files)
+output/
+
+# Generated files in root (if accidentally created there)
+aws_regions_services.xlsx
+aws_regions_services.json
+aws_regions_services_*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Keep root directory clean - examples of items that should be organized
+# test_*.py files should go in tests/
+# *_example.py files should go in examples/
+# utility scripts should go in scripts/ or tools/
+# documentation should go in docs/

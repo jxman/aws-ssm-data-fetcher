@@ -1,0 +1,1 @@
+"""Example scripts and utilities for AWS SSM Data Fetcher."""

@@ -1,0 +1,217 @@
+name: 'Scheduled Lambda Execution'
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC (adjust as needed)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  execute-pipeline:
+    name: 'Execute AWS SSM Data Fetcher Pipeline'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'prod' }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+        role-session-name: GitHubActions-ScheduledExecution
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+        terraform_wrapper: false
+
+    - name: Get Infrastructure Outputs
+      working-directory: ./terraform
+      run: |
+        # Initialize Terraform to access outputs
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=aws-ssm-fetcher/${{ github.event.inputs.environment || 'prod' }}/terraform.tfstate" \
+          -backend-config="region=${{ env.AWS_REGION }}" \
+          -backend-config="encrypt=true"
+        
+        # Get infrastructure details
+        STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn)
+        S3_BUCKET=$(terraform output -raw s3_bucket_name)
+        DASHBOARD_URL=$(terraform output -raw cloudwatch_dashboard_url)
+        
+        echo "STEP_FUNCTION_ARN=$STEP_FUNCTION_ARN" >> $GITHUB_ENV
+        echo "S3_BUCKET=$S3_BUCKET" >> $GITHUB_ENV
+        echo "DASHBOARD_URL=$DASHBOARD_URL" >> $GITHUB_ENV
+
+    - name: Execute Step Function
+      id: execute
+      run: |
+        echo "🚀 Starting AWS SSM Data Fetcher pipeline execution..."
+        
+        # Create execution input
+        EXECUTION_INPUT=$(cat << EOF
+        {
+          "source": "github-actions-scheduled",
+          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "environment": "${{ github.event.inputs.environment || 'prod' }}",
+          "execution_id": "scheduled-$(date +%Y%m%d-%H%M%S)"
+        }
+        EOF
+        )
+        
+        # Start execution
+        EXECUTION_ARN=$(aws stepfunctions start-execution \
+          --state-machine-arn "$STEP_FUNCTION_ARN" \
+          --name "scheduled-$(date +%Y%m%d-%H%M%S)" \
+          --input "$EXECUTION_INPUT" \
+          --query 'executionArn' --output text)
+        
+        echo "EXECUTION_ARN=$EXECUTION_ARN" >> $GITHUB_ENV
+        echo "execution_arn=$EXECUTION_ARN" >> $GITHUB_OUTPUT
+        
+        echo "✅ Execution started: $EXECUTION_ARN"
+
+    - name: Monitor Execution
+      id: monitor
+      run: |
+        echo "⏳ Monitoring execution progress..."
+        
+        # Wait for execution to complete (with timeout)
+        MAX_WAIT=1800  # 30 minutes
+        WAIT_TIME=0
+        STATUS="RUNNING"
+        
+        while [ "$STATUS" = "RUNNING" ] && [ $WAIT_TIME -lt $MAX_WAIT ]; do
+          sleep 60
+          WAIT_TIME=$((WAIT_TIME + 60))
+          
+          STATUS=$(aws stepfunctions describe-execution \
+            --execution-arn "$EXECUTION_ARN" \
+            --query 'status' --output text)
+          
+          echo "Status after ${WAIT_TIME}s: $STATUS"
+          
+          # Update step summary with progress
+          echo "## 📊 Execution Progress" >> $GITHUB_STEP_SUMMARY
+          echo "- **Execution ARN**: $EXECUTION_ARN" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: $STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runtime**: ${WAIT_TIME}s" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard**: [$DASHBOARD_URL]($DASHBOARD_URL)" >> $GITHUB_STEP_SUMMARY
+        done
+        
+        echo "status=$STATUS" >> $GITHUB_OUTPUT
+        
+        # Get execution details
+        EXECUTION_DETAILS=$(aws stepfunctions describe-execution \
+          --execution-arn "$EXECUTION_ARN" \
+          --output json)
+        
+        echo "Final status: $STATUS"
+        echo "$EXECUTION_DETAILS" | jq '.'
+
+    - name: Check Results
+      if: steps.monitor.outputs.status == 'SUCCEEDED'
+      run: |
+        echo "✅ Pipeline execution completed successfully!"
+        
+        # List generated reports
+        echo "📄 Generated reports:"
+        aws s3 ls s3://$S3_BUCKET/reports/ --recursive --human-readable
+        
+        # Get latest reports info
+        LATEST_REPORTS=$(aws s3 ls s3://$S3_BUCKET/reports/ --recursive | tail -5)
+        
+        echo "## 🎉 Execution Completed Successfully" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📄 Generated Reports" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+        echo "$LATEST_REPORTS" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Monitoring" >> $GITHUB_STEP_SUMMARY
+        echo "- [CloudWatch Dashboard]($DASHBOARD_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "- S3 Bucket: \`$S3_BUCKET\`" >> $GITHUB_STEP_SUMMARY
+
+    - name: Handle Failure
+      if: steps.monitor.outputs.status != 'SUCCEEDED'
+      run: |
+        echo "❌ Pipeline execution failed with status: ${{ steps.monitor.outputs.status }}"
+        
+        # Get failure details
+        FAILURE_DETAILS=$(aws stepfunctions describe-execution \
+          --execution-arn "$EXECUTION_ARN" \
+          --query 'cause' --output text 2>/dev/null || echo "No failure details available")
+        
+        echo "Failure details: $FAILURE_DETAILS"
+        
+        echo "## ❌ Execution Failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status**: ${{ steps.monitor.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Failure Details**:" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+        echo "$FAILURE_DETAILS" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Troubleshooting**:" >> $GITHUB_STEP_SUMMARY
+        echo "- Check [CloudWatch Dashboard]($DASHBOARD_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "- Review Lambda function logs" >> $GITHUB_STEP_SUMMARY
+        echo "- Check Step Functions execution history" >> $GITHUB_STEP_SUMMARY
+        
+        exit 1
+
+    - name: Cleanup Old Reports
+      if: steps.monitor.outputs.status == 'SUCCEEDED'
+      run: |
+        echo "🧹 Cleaning up old reports..."
+        
+        # Keep only the last 30 days of reports
+        CUTOFF_DATE=$(date -d "30 days ago" +%Y-%m-%d 2>/dev/null || date -v-30d +%Y-%m-%d)
+        
+        # This is a simple cleanup - in production you might want more sophisticated logic
+        echo "Keeping reports newer than $CUTOFF_DATE"
+        
+        # The S3 lifecycle policies in Terraform handle this automatically,
+        # but this provides manual cleanup if needed
+        echo "✅ Cleanup completed (handled by S3 lifecycle policies)"
+
+  notify-results:
+    needs: execute-pipeline
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Notify Success
+      if: needs.execute-pipeline.result == 'success'
+      run: |
+        echo "✅ Scheduled execution completed successfully"
+        # Add Slack/email notification here if needed
+
+    - name: Notify Failure  
+      if: needs.execute-pipeline.result != 'success'
+      run: |
+        echo "❌ Scheduled execution failed"
+        # Add Slack/email notification here if needed
+        exit 1

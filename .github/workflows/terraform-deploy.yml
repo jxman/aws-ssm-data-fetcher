@@ -1,0 +1,272 @@
+name: 'Terraform Deployment'
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'terraform/**'
+      - 'lambda_functions/**'
+      - '.github/workflows/terraform-deploy.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - 'lambda_functions/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+      action:
+        description: 'Terraform action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+        - plan
+        - apply
+        - destroy
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
+env:
+  TF_VERSION: 1.5.0
+  AWS_REGION: us-east-1
+
+jobs:
+  terraform:
+    name: 'Terraform ${{ github.event.inputs.action || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'apply') || 'plan' }}'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod') || (github.ref == 'refs/heads/develop' && 'staging') || 'dev' }}
+    
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+        role-session-name: GitHubActions-TerraformDeployment
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python Dependencies
+      run: |
+        cd ../
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build Lambda Packages
+      run: |
+        cd ../lambda_functions
+        chmod +x scripts/build_packages.sh
+        ./scripts/build_packages.sh
+        echo "📦 Lambda packages built successfully"
+
+    - name: Verify Lambda Packages
+      run: |
+        cd ../lambda_functions
+        echo "🔍 Verifying Lambda package sizes..."
+        for package in shared_layer.zip */deployment_package.zip; do
+          if [ -f "$package" ]; then
+            size=$(stat -f%z "$package" 2>/dev/null || stat -c%s "$package" 2>/dev/null)
+            size_mb=$((size / 1024 / 1024))
+            echo "  ✅ $package: ${size_mb}MB"
+            if [ $size_mb -gt 50 ]; then
+              echo "  ❌ Package $package exceeds 50MB limit (${size_mb}MB)"
+              exit 1
+            fi
+          fi
+        done
+        echo "✅ All packages within AWS Lambda limits"
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+
+    - name: Determine Environment
+      id: env
+      run: |
+        if [ "${{ github.event.inputs.environment }}" != "" ]; then
+          echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+        elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          echo "environment=prod" >> $GITHUB_OUTPUT
+        elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+          echo "environment=staging" >> $GITHUB_OUTPUT
+        else
+          echo "environment=dev" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Determine Action
+      id: action
+      run: |
+        if [ "${{ github.event.inputs.action }}" != "" ]; then
+          echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
+        elif [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          echo "action=apply" >> $GITHUB_OUTPUT
+        else
+          echo "action=plan" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Terraform Format Check
+      run: terraform fmt -check=true -diff=true -recursive
+
+    - name: Terraform Init
+      run: |
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=aws-ssm-fetcher/${{ steps.env.outputs.environment }}/terraform.tfstate" \
+          -backend-config="region=${{ env.AWS_REGION }}" \
+          -backend-config="encrypt=true"
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Security Scan
+      uses: aquasecurity/tfsec-action@v1.0.3
+      with:
+        working_directory: terraform
+        soft_fail: true
+
+    - name: Terraform Plan
+      id: plan
+      run: |
+        terraform plan \
+          -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
+          -out=tfplan-${{ steps.env.outputs.environment }} \
+          -detailed-exitcode
+      continue-on-error: true
+
+    - name: Update Pull Request
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      env:
+        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+          
+          <details><summary>Show Plan</summary>
+          
+          \`\`\`\n
+          ${process.env.PLAN}
+          \`\`\`
+          
+          </details>
+          
+          *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Terraform Plan Status
+      if: steps.plan.outcome == 'failure'
+      run: exit 1
+
+    - name: Terraform Apply
+      if: steps.action.outputs.action == 'apply' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+      run: |
+        terraform apply \
+          -auto-approve \
+          tfplan-${{ steps.env.outputs.environment }}
+        
+        echo "🚀 Infrastructure deployed successfully!"
+        echo "📊 Terraform Outputs:"
+        terraform output
+
+    - name: Terraform Destroy
+      if: steps.action.outputs.action == 'destroy' && github.event_name == 'workflow_dispatch'
+      run: |
+        terraform destroy \
+          -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
+          -auto-approve
+        echo "🗑️ Infrastructure destroyed successfully!"
+
+    - name: Test Infrastructure
+      if: steps.action.outputs.action == 'apply'
+      run: |
+        echo "🧪 Testing deployed infrastructure..."
+        
+        # Get outputs
+        STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn)
+        S3_BUCKET=$(terraform output -raw s3_bucket_name)
+        
+        echo "Step Function ARN: $STEP_FUNCTION_ARN"
+        echo "S3 Bucket: $S3_BUCKET"
+        
+        # Test Step Function execution
+        EXECUTION_ARN=$(aws stepfunctions start-execution \
+          --state-machine-arn "$STEP_FUNCTION_ARN" \
+          --input '{"test": true, "source": "github-actions"}' \
+          --query 'executionArn' --output text)
+        
+        echo "Started test execution: $EXECUTION_ARN"
+        
+        # Wait a bit and check status
+        sleep 30
+        STATUS=$(aws stepfunctions describe-execution \
+          --execution-arn "$EXECUTION_ARN" \
+          --query 'status' --output text)
+        
+        echo "Execution status: $STATUS"
+        
+        if [ "$STATUS" = "SUCCEEDED" ]; then
+          echo "✅ Infrastructure test passed!"
+        elif [ "$STATUS" = "RUNNING" ]; then
+          echo "⏳ Execution still running - infrastructure appears healthy"
+        else
+          echo "❌ Infrastructure test failed with status: $STATUS"
+          exit 1
+        fi
+
+    - name: Deployment Summary
+      if: steps.action.outputs.action == 'apply'
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ steps.env.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **AWS Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Terraform Version**: ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Infrastructure Outputs" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+        terraform output >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        DASHBOARD_URL=$(terraform output -raw cloudwatch_dashboard_url)
+        echo "- [CloudWatch Dashboard]($DASHBOARD_URL)" >> $GITHUB_STEP_SUMMARY
