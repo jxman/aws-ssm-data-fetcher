@@ -64,7 +64,7 @@ module "iam" {
   project_name = local.project_name
   environment  = var.environment
   common_tags  = local.common_tags
-  
+
   s3_bucket_arn = module.s3_storage.bucket_arn
 }
 
@@ -81,23 +81,23 @@ module "lambda_layer" {
 module "lambda_data_fetcher" {
   source = "./modules/lambda-function"
 
-  project_name    = local.project_name
-  environment     = var.environment
-  function_name   = "data-fetcher"
-  function_role   = module.iam.lambda_execution_role_arn
+  project_name     = local.project_name
+  environment      = var.environment
+  function_name    = "data-fetcher"
+  function_role    = module.iam.lambda_execution_role_arn
   lambda_layer_arn = module.lambda_layer.layer_arn
-  
-  source_path     = "../lambda_functions/data_fetcher"
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 900  # 15 minutes
-  memory_size     = 1024 # 1GB
+
+  source_path = "../lambda_functions/data_fetcher"
+  handler     = "lambda_function.lambda_handler"
+  runtime     = "python3.11"
+  timeout     = 900  # 15 minutes
+  memory_size = 1024 # 1GB
 
   environment_variables = {
-    S3_BUCKET       = module.s3_storage.bucket_name
-    CACHE_PREFIX    = "cache"
-    LOG_LEVEL       = var.log_level
-    ENVIRONMENT     = var.environment
+    S3_BUCKET    = module.s3_storage.bucket_name
+    CACHE_PREFIX = "cache"
+    LOG_LEVEL    = var.log_level
+    ENVIRONMENT  = var.environment
   }
 
   common_tags = local.common_tags
@@ -106,23 +106,23 @@ module "lambda_data_fetcher" {
 module "lambda_processor" {
   source = "./modules/lambda-function"
 
-  project_name    = local.project_name
-  environment     = var.environment
-  function_name   = "processor"
-  function_role   = module.iam.lambda_execution_role_arn
+  project_name     = local.project_name
+  environment      = var.environment
+  function_name    = "processor"
+  function_role    = module.iam.lambda_execution_role_arn
   lambda_layer_arn = module.lambda_layer.layer_arn
-  
-  source_path     = "../lambda_functions/processor"
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 900  # 15 minutes
-  memory_size     = 3008 # 3GB (for pandas/numpy processing)
+
+  source_path = "../lambda_functions/processor"
+  handler     = "lambda_function.lambda_handler"
+  runtime     = "python3.11"
+  timeout     = 900  # 15 minutes
+  memory_size = 3008 # 3GB (for pandas/numpy processing)
 
   environment_variables = {
-    S3_BUCKET       = module.s3_storage.bucket_name
-    CACHE_PREFIX    = "cache"
-    LOG_LEVEL       = var.log_level
-    ENVIRONMENT     = var.environment
+    S3_BUCKET    = module.s3_storage.bucket_name
+    CACHE_PREFIX = "cache"
+    LOG_LEVEL    = var.log_level
+    ENVIRONMENT  = var.environment
   }
 
   common_tags = local.common_tags
@@ -131,23 +131,23 @@ module "lambda_processor" {
 module "lambda_report_generator" {
   source = "./modules/lambda-function"
 
-  project_name    = local.project_name
-  environment     = var.environment
-  function_name   = "report-generator"
-  function_role   = module.iam.lambda_execution_role_arn
+  project_name     = local.project_name
+  environment      = var.environment
+  function_name    = "report-generator"
+  function_role    = module.iam.lambda_execution_role_arn
   lambda_layer_arn = module.lambda_layer.layer_arn
-  
-  source_path     = "../lambda_functions/report_generator"
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.11"
-  timeout         = 600  # 10 minutes
-  memory_size     = 2048 # 2GB
+
+  source_path = "../lambda_functions/report_generator"
+  handler     = "lambda_function.lambda_handler"
+  runtime     = "python3.11"
+  timeout     = 600  # 10 minutes
+  memory_size = 2048 # 2GB
 
   environment_variables = {
-    S3_BUCKET       = module.s3_storage.bucket_name
-    OUTPUT_PREFIX   = "reports"
-    LOG_LEVEL       = var.log_level
-    ENVIRONMENT     = var.environment
+    S3_BUCKET     = module.s3_storage.bucket_name
+    OUTPUT_PREFIX = "reports"
+    LOG_LEVEL     = var.log_level
+    ENVIRONMENT   = var.environment
   }
 
   common_tags = local.common_tags
@@ -182,7 +182,7 @@ module "cloudwatch" {
     module.lambda_report_generator.function_name
   ]
 
-  step_function_arn = module.step_functions.state_machine_arn
+  step_function_arn        = module.step_functions.state_machine_arn
   enable_sns_notifications = var.enable_sns_notifications
-  sns_email = var.sns_email
+  sns_email                = var.sns_email
 }

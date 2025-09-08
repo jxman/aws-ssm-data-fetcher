@@ -3,7 +3,7 @@ data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = var.source_path
   output_path = "${var.source_path}.zip"
-  excludes    = [
+  excludes = [
     "__pycache__",
     "*.pyc",
     ".pytest_cache",
@@ -15,13 +15,13 @@ data "archive_file" "lambda_zip" {
 resource "aws_lambda_function" "main" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = "${var.project_name}-${var.environment}-${var.function_name}"
-  role            = var.function_role
-  handler         = var.handler
+  role             = var.function_role
+  handler          = var.handler
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  runtime         = var.runtime
-  timeout         = var.timeout
-  memory_size     = var.memory_size
-  architectures   = ["x86_64"]
+  runtime          = var.runtime
+  timeout          = var.timeout
+  memory_size      = var.memory_size
+  architectures    = ["x86_64"]
 
   layers = var.lambda_layer_arn != "" ? [var.lambda_layer_arn] : []
 

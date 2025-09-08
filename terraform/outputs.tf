@@ -57,10 +57,10 @@ output "iam_step_functions_role_arn" {
 output "deployment_info" {
   description = "Information for deployment and testing"
   value = {
-    environment      = var.environment
-    aws_region      = var.aws_region
-    s3_bucket       = module.s3_storage.bucket_name
-    step_function   = module.step_functions.state_machine_name
+    environment   = var.environment
+    aws_region    = var.aws_region
+    s3_bucket     = module.s3_storage.bucket_name
+    step_function = module.step_functions.state_machine_name
     lambda_functions = {
       data_fetcher     = module.lambda_data_fetcher.function_name
       processor        = module.lambda_processor.function_name

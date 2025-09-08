@@ -38,7 +38,7 @@ variable "retention_days" {
   default     = 14
 
   validation {
-    condition = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.retention_days)
+    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.retention_days)
     error_message = "Retention days must be a valid CloudWatch logs retention period."
   }
 }
@@ -52,7 +52,7 @@ variable "sns_email" {
 variable "schedule_expression" {
   description = "CloudWatch Events rule schedule expression for automated runs"
   type        = string
-  default     = "rate(24 hours)"  # Run daily
+  default     = "rate(24 hours)" # Run daily
 }
 
 variable "enable_scheduled_execution" {
