@@ -47,13 +47,28 @@ jobs:
         ./scripts/build_packages.sh
         
         echo "🔍 Verifying package sizes..."
-        for package in shared_layer.zip */deployment_package.zip; do
+        
+        # Check Lambda function packages (50MB limit)
+        for package in */deployment_package.zip; do
           if [ -f "$package" ]; then
             size=$(stat -c%s "$package" 2>/dev/null || stat -f%z "$package" 2>/dev/null)
             size_mb=$((size / 1024 / 1024))
             echo "  ✅ $package: ${size_mb}MB"
             if [ $size_mb -gt 50 ]; then
               echo "  ❌ Package $package exceeds 50MB limit (${size_mb}MB)"
+              exit 1
+            fi
+          fi
+        done
+        
+        # Check Lambda layer packages (250MB limit)
+        for package in *_layer/*.zip shared_layer.zip; do
+          if [ -f "$package" ]; then
+            size=$(stat -c%s "$package" 2>/dev/null || stat -f%z "$package" 2>/dev/null)
+            size_mb=$((size / 1024 / 1024))
+            echo "  ✅ Layer $package: ${size_mb}MB"
+            if [ $size_mb -gt 250 ]; then
+              echo "  ❌ Layer $package exceeds 250MB limit (${size_mb}MB)"
               exit 1
             fi
           fi

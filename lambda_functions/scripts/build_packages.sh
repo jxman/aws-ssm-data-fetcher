@@ -151,8 +151,61 @@ fi
 command -v pip >/dev/null 2>&1 || { echo "❌ pip is required but not installed"; exit 1; }
 command -v zip >/dev/null 2>&1 || { echo "❌ zip is required but not installed"; exit 1; }
 
+# Function to build heavy dependencies layer
+build_heavy_deps_layer() {
+    echo -e "${BLUE}📦 Building heavy dependencies layer...${NC}"
+    
+    local layer_dir="$LAMBDA_DIR/heavy_deps_layer"
+    local build_dir="$layer_dir/build"
+    
+    if [ ! -f "$layer_dir/requirements.txt" ]; then
+        echo "⚠️  No requirements.txt found for heavy dependencies layer - skipping"
+        return 0
+    fi
+    
+    rm -rf "$build_dir"
+    mkdir -p "$build_dir/python"
+    
+    # Install heavy dependencies
+    echo "   Installing heavy dependencies (this may take a while)..."
+    pip install -r "$layer_dir/requirements.txt" -t "$build_dir/python" --quiet
+    
+    # Remove unnecessary files to reduce size
+    find "$build_dir" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    find "$build_dir" -type f -name "*.pyc" -delete 2>/dev/null || true
+    find "$build_dir" -type f -name "*.pyo" -delete 2>/dev/null || true
+    find "$build_dir" -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+    find "$build_dir" -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+    find "$build_dir" -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
+    find "$build_dir" -type d -name "test" -exec rm -rf {} + 2>/dev/null || true
+    find "$build_dir" -name "*.so" -exec strip {} + 2>/dev/null || true
+    
+    # Create layer package
+    cd "$build_dir"
+    echo "   Creating layer package: layer.zip"
+    zip -r ../heavy_deps_layer.zip python/ >/dev/null 2>&1
+    cd - >/dev/null
+    
+    # Get size and report
+    local size=$(du -sh "$layer_dir/heavy_deps_layer.zip" 2>/dev/null | cut -f1 || echo "unknown")
+    echo "   ✅ Heavy dependencies layer created: ${GREEN}$size${NC}"
+    
+    # Warn if layer is getting large (AWS limit is 250MB per layer)
+    local size_bytes=$(wc -c < "$layer_dir/heavy_deps_layer.zip" 2>/dev/null || echo "0")
+    local size_mb=$((size_bytes / 1024 / 1024))
+    if [ $size_mb -gt 200 ]; then
+        echo "   ⚠️  ${YELLOW}Warning: Layer size (${size_mb}M) is approaching 250MB Lambda layer limit${NC}"
+    fi
+    
+    # Clean up build directory
+    rm -rf "$build_dir"
+}
+
 # Build shared layer first
 build_shared_layer
+
+# Build heavy dependencies layer
+build_heavy_deps_layer
 
 # Build each function package
 build_function_package "data_fetcher"
