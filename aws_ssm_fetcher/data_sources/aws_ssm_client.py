@@ -759,7 +759,7 @@ class AWSSSMClient(AWSDataSource):
 
         self.logger.info("Mapping services to regions using actual AWS SSM data...")
 
-        region_services = {}
+        region_services: Dict[str, List[str]] = {}
         total_mappings = 0
 
         try:
