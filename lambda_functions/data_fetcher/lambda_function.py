@@ -54,7 +54,9 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         from aws_ssm_fetcher.core.config import Config
         from aws_ssm_fetcher.data_sources.rss_client import RSSClient
         from aws_ssm_fetcher.processors.regional_validator import (
-            RegionDiscoverer, ServiceDiscoverer)
+            RegionDiscoverer,
+            ServiceDiscoverer,
+        )
 
         # Create Lambda-optimized configuration
         lambda_config = Config.for_lambda("data_fetcher")

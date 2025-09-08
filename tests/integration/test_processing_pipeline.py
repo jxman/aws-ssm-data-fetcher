@@ -12,11 +12,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from aws_ssm_fetcher.core.cache import CacheManager
 from aws_ssm_fetcher.core.config import Config
 from aws_ssm_fetcher.processors.base import ProcessingContext
-from aws_ssm_fetcher.processors.pipeline import (PipelineError,
-                                                 PipelineExecutionContext,
-                                                 PipelineOrchestrator,
-                                                 PipelineStage,
-                                                 ProcessingPipeline)
+from aws_ssm_fetcher.processors.pipeline import (
+    PipelineError,
+    PipelineExecutionContext,
+    PipelineOrchestrator,
+    PipelineStage,
+    ProcessingPipeline,
+)
 
 
 def create_mock_ssm_client():

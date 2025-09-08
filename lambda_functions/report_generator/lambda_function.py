@@ -51,11 +51,15 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         # Import output generation modules from shared layer
         from aws_ssm_fetcher.core.config import Config
         from aws_ssm_fetcher.outputs.base import OutputContext
-        from aws_ssm_fetcher.outputs.csv_generator import (CSVGenerator,
-                                                           MultiCSVGenerator)
+        from aws_ssm_fetcher.outputs.csv_generator import (
+            CSVGenerator,
+            MultiCSVGenerator,
+        )
         from aws_ssm_fetcher.outputs.excel_generator import ExcelGenerator
         from aws_ssm_fetcher.outputs.json_generator import (
-            CompactJSONGenerator, JSONGenerator)
+            CompactJSONGenerator,
+            JSONGenerator,
+        )
 
         # Extract data for report generation
         regional_services_data = processed_data.get("regional_services_data", [])

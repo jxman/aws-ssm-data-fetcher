@@ -5,8 +5,12 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from ..core.error_handling import ErrorHandler, with_retry_and_circuit_breaker
-from .base import (BaseProcessor, ProcessingContext, ProcessingError,
-                   ProcessingValidationError)
+from .base import (
+    BaseProcessor,
+    ProcessingContext,
+    ProcessingError,
+    ProcessingValidationError,
+)
 
 
 class ServiceMapper(BaseProcessor):

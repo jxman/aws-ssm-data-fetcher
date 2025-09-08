@@ -8,9 +8,12 @@ from typing import Any, Dict, List, Optional
 import boto3
 from botocore.exceptions import ClientError
 
-from ..core.error_handling import (ErrorHandler, NonRetryableError,
-                                   RetryableError,
-                                   with_retry_and_circuit_breaker)
+from ..core.error_handling import (
+    ErrorHandler,
+    NonRetryableError,
+    RetryableError,
+    with_retry_and_circuit_breaker,
+)
 from ..core.logging import get_logger
 from .base import AWSDataSource
 

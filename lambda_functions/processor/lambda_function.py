@@ -53,11 +53,12 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         from aws_ssm_fetcher.core.config import Config
         from aws_ssm_fetcher.processors.base import ProcessingContext
         from aws_ssm_fetcher.processors.data_transformer import DataTransformer
-        from aws_ssm_fetcher.processors.pipeline import (PipelineOrchestrator,
-                                                         ProcessingPipeline)
+        from aws_ssm_fetcher.processors.pipeline import (
+            PipelineOrchestrator,
+            ProcessingPipeline,
+        )
         from aws_ssm_fetcher.processors.service_mapper import ServiceMapper
-        from aws_ssm_fetcher.processors.statistics_analyzer import \
-            StatisticsAnalyzer
+        from aws_ssm_fetcher.processors.statistics_analyzer import StatisticsAnalyzer
 
         # Create Lambda-optimized configuration
         lambda_config = Config.for_lambda("processor")

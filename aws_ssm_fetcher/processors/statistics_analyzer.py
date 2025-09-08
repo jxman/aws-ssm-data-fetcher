@@ -9,8 +9,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 
 from ..core.error_handling import ErrorHandler, with_retry
-from .base import (BaseProcessor, ProcessingContext, ProcessingError,
-                   ProcessingValidationError)
+from .base import (
+    BaseProcessor,
+    ProcessingContext,
+    ProcessingError,
+    ProcessingValidationError,
+)
 
 
 class StatisticsAnalysisError(ProcessingError):

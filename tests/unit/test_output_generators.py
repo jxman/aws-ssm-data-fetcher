@@ -12,12 +12,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from aws_ssm_fetcher.core.config import Config
 from aws_ssm_fetcher.outputs.base import OutputContext
-from aws_ssm_fetcher.outputs.csv_generator import (CSVGenerator,
-                                                   MultiCSVGenerator,
-                                                   TSVGenerator)
+from aws_ssm_fetcher.outputs.csv_generator import (
+    CSVGenerator,
+    MultiCSVGenerator,
+    TSVGenerator,
+)
 from aws_ssm_fetcher.outputs.excel_generator import ExcelGenerator
-from aws_ssm_fetcher.outputs.json_generator import (CompactJSONGenerator,
-                                                    JSONGenerator)
+from aws_ssm_fetcher.outputs.json_generator import CompactJSONGenerator, JSONGenerator
 
 
 def create_test_data():

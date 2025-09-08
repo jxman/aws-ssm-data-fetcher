@@ -12,7 +12,9 @@ from aws_ssm_fetcher.core.cache import CacheManager
 from aws_ssm_fetcher.core.config import Config
 from aws_ssm_fetcher.processors.base import ProcessingContext
 from aws_ssm_fetcher.processors.statistics_analyzer import (
-    AvailabilityZoneAnalyzer, StatisticsAnalyzer)
+    AvailabilityZoneAnalyzer,
+    StatisticsAnalyzer,
+)
 
 
 def create_comprehensive_test_data():

@@ -5,8 +5,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 
-from .base import (BaseProcessor, ProcessingContext, ProcessingError,
-                   ProcessingValidationError)
+from .base import (
+    BaseProcessor,
+    ProcessingContext,
+    ProcessingError,
+    ProcessingValidationError,
+)
 
 
 class DataTransformationError(ProcessingError):

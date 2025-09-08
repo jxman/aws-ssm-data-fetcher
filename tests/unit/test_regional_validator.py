@@ -12,7 +12,10 @@ from aws_ssm_fetcher.core.cache import CacheManager
 from aws_ssm_fetcher.core.config import Config
 from aws_ssm_fetcher.processors.base import ProcessingContext
 from aws_ssm_fetcher.processors.regional_validator import (
-    RegionalDataValidator, RegionDiscoverer, ServiceDiscoverer)
+    RegionalDataValidator,
+    RegionDiscoverer,
+    ServiceDiscoverer,
+)
 
 
 def create_comprehensive_test_data():

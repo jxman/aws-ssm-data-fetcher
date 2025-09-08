@@ -10,9 +10,13 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from ..core.error_handling import (CircuitBreakerConfig, NonRetryableError,
-                                   RetryableError, RetryConfig,
-                                   with_retry_and_circuit_breaker)
+from ..core.error_handling import (
+    CircuitBreakerConfig,
+    NonRetryableError,
+    RetryableError,
+    RetryConfig,
+    with_retry_and_circuit_breaker,
+)
 from ..core.logging import get_logger
 from .base import DataSource
 
