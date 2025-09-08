@@ -52,13 +52,13 @@ class PipelineExecutionContext:
         self.pipeline_id = pipeline_id
         self.start_time = datetime.now()
         self.end_time: Optional[datetime] = None
-        self.current_stage = None
-        self.completed_stages = []
-        self.failed_stages = []
-        self.stage_results = {}
-        self.stage_timings = {}
-        self.errors = []
-        self.metadata = {}
+        self.current_stage: Optional[PipelineStage] = None
+        self.completed_stages: List[PipelineStage] = []
+        self.failed_stages: List[PipelineStage] = []
+        self.stage_results: Dict[str, Any] = {}
+        self.stage_timings: Dict[str, Dict[str, Union[datetime, float]]] = {}
+        self.errors: List[Dict[str, Any]] = []
+        self.metadata: Dict[str, Any] = {}
 
     def start_stage(self, stage: PipelineStage):
         """Mark the start of a pipeline stage."""
@@ -68,11 +68,13 @@ class PipelineExecutionContext:
     def complete_stage(self, stage: PipelineStage, result: Any = None):
         """Mark the completion of a pipeline stage."""
         if stage.value in self.stage_timings:
-            self.stage_timings[stage.value]["end"] = datetime.now()
-            self.stage_timings[stage.value]["duration"] = (
-                self.stage_timings[stage.value]["end"]
-                - self.stage_timings[stage.value]["start"]
-            ).total_seconds()
+            end_time = datetime.now()
+            start_time = self.stage_timings[stage.value]["start"]
+            self.stage_timings[stage.value]["end"] = end_time
+            if isinstance(start_time, datetime):
+                self.stage_timings[stage.value]["duration"] = (
+                    end_time - start_time
+                ).total_seconds()
 
         self.completed_stages.append(stage)
         if result is not None:
@@ -82,11 +84,13 @@ class PipelineExecutionContext:
     def fail_stage(self, stage: PipelineStage, error: Exception):
         """Mark the failure of a pipeline stage."""
         if stage.value in self.stage_timings:
-            self.stage_timings[stage.value]["end"] = datetime.now()
-            self.stage_timings[stage.value]["duration"] = (
-                self.stage_timings[stage.value]["end"]
-                - self.stage_timings[stage.value]["start"]
-            ).total_seconds()
+            end_time = datetime.now()
+            start_time = self.stage_timings[stage.value]["start"]
+            self.stage_timings[stage.value]["end"] = end_time
+            if isinstance(start_time, datetime):
+                self.stage_timings[stage.value]["duration"] = (
+                    end_time - start_time
+                ).total_seconds()
 
         self.failed_stages.append(stage)
         self.errors.append(
@@ -592,15 +596,17 @@ class ProcessingPipeline(BaseProcessor):
 
     def _discover_regions_async(self, config: Dict) -> List[str]:
         """Discover regions (async simulation)."""
-        return self.region_discoverer.process_with_cache(
+        result = self.region_discoverer.process_with_cache(
             config.get("region_discovery_params")
         )
+        return result if isinstance(result, list) else []
 
     def _discover_services_async(self, config: Dict) -> List[str]:
         """Discover services (async simulation)."""
-        return self.service_discoverer.process_with_cache(
+        result = self.service_discoverer.process_with_cache(
             config.get("service_discovery_params")
         )
+        return result if isinstance(result, list) else []
 
     def _generate_data_summary(self, results: Dict) -> Dict[str, Any]:
         """Generate high-level data summary."""
@@ -716,9 +722,9 @@ class PipelineOrchestrator:
         """
         self.context = context
         self.logger = get_logger("pipeline_orchestrator")
-        self.active_pipelines = {}
-        self.completed_pipelines = {}
-        self.failed_pipelines = {}
+        self.active_pipelines: Dict[str, ProcessingPipeline] = {}
+        self.completed_pipelines: Dict[str, Dict[str, Any]] = {}
+        self.failed_pipelines: Dict[str, Dict[str, Any]] = {}
 
     def create_pipeline(
         self, pipeline_config: Optional[Dict] = None
