@@ -180,13 +180,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Run Bandit Security Scan
-      uses: securecodewarrior/github-action-bandit@v1.0.1
-      with:
-        path: "aws_ssm_fetcher"
-        level: "medium"
-        confidence: "medium"
-        exit_zero: true
+    - name: Install and run Bandit Security Scan
+      run: |
+        pip install bandit
+        bandit -r aws_ssm_fetcher -f json -o bandit-report.json || true
+        bandit -r aws_ssm_fetcher || true
+      continue-on-error: true
 
     - name: Check for secrets
       uses: trufflesecurity/trufflehog@main
