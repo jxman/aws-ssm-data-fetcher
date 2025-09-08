@@ -263,9 +263,9 @@ The AWS Services Reporter uses only verified available data:
 
 ---
 
-**Document Version**: 2.0 - **VERIFIED DATA ONLY**  
-**Testing Date**: August 28, 2024  
-**API Testing Region**: us-east-1  
+**Document Version**: 2.0 - **VERIFIED DATA ONLY**
+**Testing Date**: August 28, 2024
+**API Testing Region**: us-east-1
 **Related Project**: AWS Services Reporter v1.5.0
 
 **⚠️ Note**: This document reflects the actual state of AWS Parameter Store public parameters as of August 2024. Unlike theoretical documentation, all paths and data have been verified through direct API testing.

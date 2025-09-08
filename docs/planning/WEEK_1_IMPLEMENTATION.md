@@ -36,23 +36,23 @@ from typing import Optional
 @dataclass
 class Config:
     """Configuration settings for AWS SSM Data Fetcher."""
-    
+
     # AWS Settings
     aws_region: str = "us-east-1"
     aws_profile: Optional[str] = None
-    
+
     # Cache Settings
     cache_dir: str = ".cache"
     cache_hours: int = 24
     cache_enabled: bool = True
-    
+
     # Output Settings
     output_dir: str = "output"
-    
+
     # Performance Settings
     max_retries: int = 3
     max_workers: int = 10
-    
+
     @classmethod
     def from_env(cls) -> 'Config':
         """Create config from environment variables."""
@@ -66,23 +66,23 @@ class Config:
             max_retries=int(os.getenv('MAX_RETRIES', '3')),
             max_workers=int(os.getenv('MAX_WORKERS', '10'))
         )
-    
-    @classmethod  
+
+    @classmethod
     def for_lambda(cls, function_type: str = "data_fetcher") -> 'Config':
         """Create Lambda-optimized configuration."""
         config = cls.from_env()
-        
+
         # Lambda-specific overrides
         config.cache_dir = "/tmp/cache"
-        config.output_dir = "/tmp/output" 
-        
+        config.output_dir = "/tmp/output"
+
         if function_type == "data_fetcher":
             config.max_workers = 20  # High concurrency for API calls
         elif function_type == "processor":
             config.max_workers = 10  # Moderate for processing
         elif function_type == "report_generator":
             config.max_workers = 5   # Lower for memory-intensive Excel generation
-            
+
         return config
 ```
 
@@ -102,7 +102,7 @@ from aws_ssm_fetcher.core.config import Config
 def __init__(self, config: Config = None):
     self.config = config or Config()
     self.region = self.config.aws_region
-    self.cache_dir = self.config.cache_dir  
+    self.cache_dir = self.config.cache_dir
     self.cache_hours = self.config.cache_hours
 ```
 
@@ -122,21 +122,21 @@ def test_config_extraction():
     config = Config()
     assert config.aws_region == "us-east-1"
     assert config.cache_hours == 24
-    
+
     # Test environment config
     import os
     os.environ['AWS_DEFAULT_REGION'] = 'us-west-2'
     os.environ['CACHE_HOURS'] = '48'
-    
+
     config = Config.from_env()
     assert config.aws_region == "us-west-2"
     assert config.cache_hours == 48
-    
+
     # Test Lambda config
     lambda_config = Config.for_lambda("data_fetcher")
     assert lambda_config.cache_dir == "/tmp/cache"
     assert lambda_config.max_workers == 20
-    
+
     print("✅ Config extraction successful!")
 
 if __name__ == "__main__":
@@ -176,23 +176,23 @@ class CacheManager:
         self.cache_dir = Path(config.cache_dir)
         self.cache_enabled = config.cache_enabled and config.cache_hours > 0
         self._memory_cache = {}  # Tier 1
-        
+
         # S3 client for Lambda cross-invocation caching
         self.s3_client = None
         if hasattr(config, 's3_cache_bucket') and config.s3_cache_bucket:
             self.s3_client = boto3.client('s3')
-    
+
     def get(self, key: str) -> Optional[Any]:
         # Tier 1: Memory cache (fastest)
         if key in self._memory_cache:
             return self._memory_cache[key]
-        
+
         # Tier 2: Local file cache
         local_data = self._get_from_local(key)
         if local_data is not None:
             self._memory_cache[key] = local_data  # Promote to memory
             return local_data
-            
+
         # Tier 3: S3 cache (for Lambda)
         if self.s3_client:
             s3_data = self._get_from_s3(key)
@@ -200,7 +200,7 @@ class CacheManager:
                 self._set_to_local(key, s3_data)  # Cache locally
                 self._memory_cache[key] = s3_data  # Cache in memory
                 return s3_data
-        
+
         return None
 ```
 
@@ -217,7 +217,7 @@ class CacheManager:
 ### **Status: NEXT TASK 🔄**
 **Planned Features:**
 - CloudWatch-optimized structured logging
-- Lambda-compatible JSON formatting  
+- Lambda-compatible JSON formatting
 - Performance timing utilities
 - Development vs. production modes
 - Error context preservation
@@ -231,39 +231,39 @@ from typing import Any, Optional, Dict
 
 class CacheManager:
     """Multi-tier caching manager."""
-    
+
     def __init__(self, config):
         self.config = config
         self.cache_dir = Path(config.cache_dir)
         self.cache_enabled = config.cache_enabled and config.cache_hours > 0
-        
+
         # Create cache directory
         if self.cache_enabled:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
-            
+
         # Initialize in-memory cache
         self._memory_cache = {}
-        
+
         # Initialize S3 client for Lambda caching
         self.s3_client = None
         if hasattr(config, 's3_cache_bucket') and config.s3_cache_bucket:
             self.s3_client = boto3.client('s3')
-    
+
     def get(self, key: str) -> Optional[Any]:
         """Get from cache with multi-tier fallback."""
         if not self.cache_enabled:
             return None
-            
+
         # Tier 1: Memory cache (fastest)
         if key in self._memory_cache:
             return self._memory_cache[key]
-        
+
         # Tier 2: Local file cache
         local_data = self._get_from_local(key)
         if local_data is not None:
             self._memory_cache[key] = local_data  # Promote to memory
             return local_data
-            
+
         # Tier 3: S3 cache (for Lambda cross-invocation)
         if self.s3_client:
             s3_data = self._get_from_s3(key)
@@ -271,30 +271,30 @@ class CacheManager:
                 self._set_to_local(key, s3_data)  # Cache locally
                 self._memory_cache[key] = s3_data  # Cache in memory
                 return s3_data
-        
+
         return None
-    
+
     def set(self, key: str, data: Any) -> bool:
         """Set data in cache."""
         if not self.cache_enabled:
             return False
-            
+
         # Always cache in memory
         self._memory_cache[key] = data
-        
+
         # Cache locally
         success = self._set_to_local(key, data)
-        
+
         # Cache in S3 if available
         if self.s3_client:
             self._set_to_s3(key, data)
-            
+
         return success
-    
+
     def _get_from_local(self, key: str) -> Optional[Any]:
         """Get from local file system."""
         cache_file = self.cache_dir / f"{key}.pkl"
-        
+
         if cache_file.exists():
             # Check TTL
             mtime = datetime.fromtimestamp(cache_file.stat().st_mtime)
@@ -304,20 +304,20 @@ class CacheManager:
                         return pickle.load(f)
                 except Exception:
                     cache_file.unlink(missing_ok=True)
-        
+
         return None
-    
+
     def _set_to_local(self, key: str, data: Any) -> bool:
         """Set to local file system."""
         cache_file = self.cache_dir / f"{key}.pkl"
-        
+
         try:
             with open(cache_file, 'wb') as f:
                 pickle.dump(data, f)
             return True
         except Exception:
             return False
-    
+
     def _get_from_s3(self, key: str) -> Optional[Any]:
         """Get from S3 cache."""
         try:
@@ -325,16 +325,16 @@ class CacheManager:
                 Bucket=self.config.s3_cache_bucket,
                 Key=f"cache/{key}.json"
             )
-            
+
             # Check TTL
             last_modified = response['LastModified'].replace(tzinfo=None)
             if datetime.utcnow() - last_modified > timedelta(hours=self.config.cache_hours):
                 return None
-            
+
             return json.loads(response['Body'].read())
         except Exception:
             return None
-    
+
     def _set_to_s3(self, key: str, data: Any) -> bool:
         """Set to S3 cache."""
         try:
@@ -347,15 +347,15 @@ class CacheManager:
             return True
         except Exception:
             return False
-    
+
     def clear_all(self) -> int:
         """Clear all caches."""
         cleared = 0
-        
+
         # Clear memory cache
         self._memory_cache.clear()
         cleared += 1
-        
+
         # Clear local cache
         if self.cache_dir.exists():
             for cache_file in self.cache_dir.glob("*.pkl"):
@@ -364,7 +364,7 @@ class CacheManager:
                     cleared += 1
                 except Exception:
                     pass
-        
+
         return cleared
 ```
 
@@ -390,7 +390,7 @@ def __init__(self, config: Config = None):
 # OLD: self._save_to_cache(key, data)
 # NEW: self.cache_manager.set(key, data)
 
-# OLD: self._load_from_cache(key) 
+# OLD: self._load_from_cache(key)
 # NEW: self.cache_manager.get(key)
 ```
 
@@ -405,12 +405,12 @@ def __init__(self, config: Config = None):
 # Config Module Testing
 🧪 Testing Config module extraction...
 ✅ Default config works
-✅ Environment config works  
+✅ Environment config works
 ✅ Lambda config works
 ✅ CLI args config works
 🎉 Config extraction successful - ready for next step!
 
-# Cache Integration Testing  
+# Cache Integration Testing
 🧪 Testing Cache integration with main script...
 ✅ CacheManager properly initialized
 ✅ Cache delegation working correctly
@@ -445,12 +445,12 @@ Total Size: 56.76 KB
 
 **Extracted Modules:**
 - ✅ **`aws_ssm_fetcher/core/config.py`** - Complete configuration management
-- ✅ **`aws_ssm_fetcher/core/cache.py`** - Multi-tier intelligent caching  
+- ✅ **`aws_ssm_fetcher/core/cache.py`** - Multi-tier intelligent caching
 - 🔄 **`aws_ssm_fetcher/core/logging.py`** - Pending (Day 5)
 
 **Integration Status:**
 - ✅ **Config integration**: All configuration centralized and working
-- ✅ **Cache integration**: Multi-tier caching with backward compatibility  
+- ✅ **Cache integration**: Multi-tier caching with backward compatibility
 - ✅ **Package structure**: Proper imports and dependencies installed
 - ✅ **CLI compatibility**: Original command-line interface preserved
 
@@ -478,19 +478,19 @@ def test_full_extraction():
     from aws_ssm_fetcher.core.config import Config
     from aws_ssm_fetcher.core.cache import CacheManager
     from aws_ssm_data_fetcher import AWSSSMDataFetcher
-    
+
     # Test that original functionality still works
     config = Config()
     fetcher = AWSSSMDataFetcher(config)
-    
+
     # Test that regions are still discovered
     regions = fetcher.discover_regions_from_ssm()
     assert len(regions) > 30, f"Expected 30+ regions, got {len(regions)}"
-    
+
     # Test that caching still works
     cached_regions = fetcher.discover_regions_from_ssm()
     assert regions == cached_regions, "Caching not working"
-    
+
     print("✅ Week 1 extraction successful - core utilities extracted!")
 
 if __name__ == "__main__":

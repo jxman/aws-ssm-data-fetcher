@@ -40,19 +40,19 @@ jobs:
   validate-promotion:
     name: 'Validate Promotion Request'
     runs-on: ubuntu-latest
-    
+
     outputs:
       valid: ${{ steps.validate.outputs.valid }}
       source_env: ${{ steps.validate.outputs.source_env }}
       target_env: ${{ steps.validate.outputs.target_env }}
-    
+
     steps:
     - name: Validate Promotion Path
       id: validate
       run: |
         SOURCE="${{ github.event.inputs.source_environment }}"
         TARGET="${{ github.event.inputs.target_environment }}"
-        
+
         # Validate promotion paths
         if [[ "$SOURCE" == "dev" && "$TARGET" == "staging" ]]; then
           echo "✅ Valid promotion: dev → staging"
@@ -66,7 +66,7 @@ jobs:
           echo "valid=false" >> $GITHUB_OUTPUT
           exit 1
         fi
-        
+
         echo "source_env=$SOURCE" >> $GITHUB_OUTPUT
         echo "target_env=$TARGET" >> $GITHUB_OUTPUT
 
@@ -76,12 +76,12 @@ jobs:
     if: needs.validate-promotion.outputs.valid == 'true'
     runs-on: ubuntu-latest
     environment: ${{ needs.validate-promotion.outputs.target_env }}
-    
+
     defaults:
       run:
         shell: bash
         working-directory: ./terraform
-    
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -119,21 +119,21 @@ jobs:
     - name: Pre-Deployment Health Check
       run: |
         echo "🏥 Running pre-deployment health checks for ${{ needs.validate-promotion.outputs.source_env }}..."
-        
+
         # Initialize source environment
         terraform init \
           -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
           -backend-config="key=aws-ssm-fetcher/${{ needs.validate-promotion.outputs.source_env }}/terraform.tfstate" \
           -backend-config="region=${{ env.AWS_REGION }}" \
           -backend-config="encrypt=true"
-        
+
         # Check source environment health
         SOURCE_OUTPUTS=$(terraform output -json)
         echo "$SOURCE_OUTPUTS" | jq '.'
-        
+
         # Verify source environment is healthy
         STEP_FUNCTION_ARN=$(echo "$SOURCE_OUTPUTS" | jq -r '.step_function_arn.value')
-        
+
         if [ "$STEP_FUNCTION_ARN" != "null" ] && [ -n "$STEP_FUNCTION_ARN" ]; then
           echo "✅ Source environment appears healthy"
         else
@@ -144,7 +144,7 @@ jobs:
     - name: Initialize Target Environment
       run: |
         echo "🎯 Initializing target environment: ${{ needs.validate-promotion.outputs.target_env }}"
-        
+
         terraform init \
           -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
           -backend-config="key=aws-ssm-fetcher/${{ needs.validate-promotion.outputs.target_env }}/terraform.tfstate" \
@@ -165,35 +165,35 @@ jobs:
       if: steps.plan.outcome == 'success'
       run: |
         echo "🚀 Deploying to ${{ needs.validate-promotion.outputs.target_env }}..."
-        
+
         terraform apply \
           -auto-approve \
           tfplan-${{ needs.validate-promotion.outputs.target_env }}
-        
+
         echo "✅ Deployment to ${{ needs.validate-promotion.outputs.target_env }} completed!"
 
     - name: Post-Deployment Validation
       run: |
         echo "🧪 Running post-deployment validation..."
-        
+
         # Get new environment outputs
         STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn)
         S3_BUCKET=$(terraform output -raw s3_bucket_name)
-        
+
         # Test deployment with a quick execution
         EXECUTION_ARN=$(aws stepfunctions start-execution \
           --state-machine-arn "$STEP_FUNCTION_ARN" \
           --input '{"test": true, "source": "promotion-validation"}' \
           --query 'executionArn' --output text)
-        
+
         echo "Test execution started: $EXECUTION_ARN"
-        
+
         # Wait briefly and check status
         sleep 30
         STATUS=$(aws stepfunctions describe-execution \
           --execution-arn "$EXECUTION_ARN" \
           --query 'status' --output text)
-        
+
         if [ "$STATUS" = "SUCCEEDED" ] || [ "$STATUS" = "RUNNING" ]; then
           echo "✅ Post-deployment validation passed!"
         else

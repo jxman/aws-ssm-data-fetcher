@@ -107,7 +107,7 @@ The pipeline automatically creates three types of reports:
 
 ## 🏗️ Legacy Manual Deployment (DEPRECATED)
 
-⚠️ **DEPRECATED**: The manual deployment steps below are provided for reference only. 
+⚠️ **DEPRECATED**: The manual deployment steps below are provided for reference only.
 
 **Current deployment method**: Use GitHub Actions workflows as described in [PRODUCTION_DEPLOYMENT_GUIDE.md](../../PRODUCTION_DEPLOYMENT_GUIDE.md)
 

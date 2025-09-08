@@ -45,9 +45,9 @@ jobs:
         cd lambda_functions
         chmod +x scripts/build_packages.sh
         ./scripts/build_packages.sh
-        
+
         echo "🔍 Verifying package sizes..."
-        
+
         # Check Lambda function packages (50MB limit)
         for package in */deployment_package.zip; do
           if [ -f "$package" ]; then
@@ -60,7 +60,7 @@ jobs:
             fi
           fi
         done
-        
+
         # Check Lambda layer packages (250MB limit)
         for package in *_layer/*.zip shared_layer.zip; do
           if [ -f "$package" ]; then
@@ -150,7 +150,7 @@ jobs:
     - name: Validate Documentation Structure
       run: |
         echo "📚 Checking documentation completeness..."
-        
+
         # Check required documentation files
         required_files=(
           "README.md"
@@ -160,7 +160,7 @@ jobs:
           "docs/deployment/TERRAFORM_INFRASTRUCTURE.md"
           "terraform/README.md"
         )
-        
+
         missing_files=()
         for file in "${required_files[@]}"; do
           if [ ! -f "$file" ]; then
@@ -169,25 +169,25 @@ jobs:
             echo "  ✅ $file"
           fi
         done
-        
+
         if [ ${#missing_files[@]} -ne 0 ]; then
           echo "❌ Missing documentation files:"
           printf '  - %s\n' "${missing_files[@]}"
           exit 1
         fi
-        
+
         echo "✅ All required documentation files present"
 
     - name: Check Documentation Links
       run: |
         echo "🔗 Checking documentation links..."
-        
+
         # Simple check for broken internal links
         find . -name "*.md" -exec grep -l "\[\.*\](" {} \; | while read -r file; do
           echo "Checking links in $file..."
           # This is a basic check - in production you might want to use a proper link checker
         done
-        
+
         echo "✅ Documentation link check completed"
 
   security:

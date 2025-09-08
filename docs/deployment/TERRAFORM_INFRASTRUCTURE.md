@@ -94,7 +94,7 @@ This document provides comprehensive information about the Terraform infrastruct
   - CloudWatch logging
 - **Orchestration Flow**:
   1. Data Fetcher → Status Check
-  2. Processor → Status Check  
+  2. Processor → Status Check
   3. Report Generator → Success Notification
   4. Any failure → Failure Notification
 
@@ -269,7 +269,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
 ### Lambda Optimization
 - **Memory Allocation**: Right-sized for each function
   - Data Fetcher: 1GB (I/O intensive)
-  - Processor: 3GB (CPU/memory intensive)  
+  - Processor: 3GB (CPU/memory intensive)
   - Report Generator: 2GB (moderate processing)
 - **Timeout Configuration**: Optimized timeouts to prevent runaway costs
 
@@ -380,7 +380,7 @@ aws cloudwatch describe-alarms --state-value ALARM
 
 ### Production Deployment
 1. **Deploy to staging** for final validation
-2. **Run end-to-end tests** 
+2. **Run end-to-end tests**
 3. **Validate monitoring and alerting**
 4. **Deploy to production** with zero downtime
 5. **Monitor initial executions**

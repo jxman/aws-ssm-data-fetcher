@@ -26,7 +26,7 @@ The infrastructure creates a complete serverless data processing pipeline **now 
            ┌─────────────────────────────────────────┐
            │        🟢 AWS Infrastructure LIVE       │
            │  S3: aws-ssm-fetcher-dev-mwik8mc3      │
-           │  Step Functions: aws-ssm-fetcher-dev    │  
+           │  Step Functions: aws-ssm-fetcher-dev    │
            │  CloudWatch Dashboard & Monitoring      │
            └─────────────────────────────────────────┘
 ```
@@ -40,7 +40,7 @@ The infrastructure creates a complete serverless data processing pipeline **now 
 
 ### Lambda Functions (✅ DEPLOYED)
 - **Data Fetcher**: `aws-ssm-fetcher-dev-data-fetcher` → Operational
-- **Processor**: `aws-ssm-fetcher-dev-processor` → Operational  
+- **Processor**: `aws-ssm-fetcher-dev-processor` → Operational
 - **Report Generator**: `aws-ssm-fetcher-dev-report-generator` → Operational
 - **Shared Layer**: Common modules shared across all functions → Active
 

@@ -6,11 +6,11 @@ This guide provides complete step-by-step instructions for deploying the AWS SSM
 
 ## 🎯 Current Status
 
-✅ **Repository Setup**: Complete with CI/CD pipeline  
-✅ **Infrastructure Code**: All Terraform templates ready  
-✅ **GitHub Actions**: Fully configured workflows  
-✅ **Security**: OIDC authentication implemented  
-✅ **Monitoring**: CloudWatch dashboards and alarms ready  
+✅ **Repository Setup**: Complete with CI/CD pipeline
+✅ **Infrastructure Code**: All Terraform templates ready
+✅ **GitHub Actions**: Fully configured workflows
+✅ **Security**: OIDC authentication implemented
+✅ **Monitoring**: CloudWatch dashboards and alarms ready
 
 ## 🏗️ Architecture Overview
 
@@ -127,7 +127,7 @@ Create environments for each deployment stage:
 1. Go to `Settings` → `Environments`
 2. Create three environments:
    - `dev`
-   - `staging` 
+   - `staging`
    - `prod`
 
 Each environment should have the same secrets configured.

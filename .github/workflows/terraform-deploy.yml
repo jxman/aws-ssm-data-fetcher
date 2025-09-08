@@ -46,10 +46,10 @@ env:
 
 jobs:
   terraform:
-    name: 'Terraform ${{ github.event.inputs.action || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'apply') || 'plan' }}'
+    name: "Terraform ${{ github.event.inputs.action || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'apply') || 'plan' }}"
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod') || (github.ref == 'refs/heads/develop' && 'staging') || 'dev' }}
-    
+
     defaults:
       run:
         shell: bash
@@ -172,17 +172,17 @@ jobs:
           #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
           #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
           #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-          
+
           <details><summary>Show Plan</summary>
-          
+
           \`\`\`\n
           ${process.env.PLAN}
           \`\`\`
-          
+
           </details>
-          
+
           *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-          
+
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
@@ -200,7 +200,7 @@ jobs:
         terraform apply \
           -auto-approve \
           tfplan-${{ steps.env.outputs.environment }}
-        
+
         echo "🚀 Infrastructure deployed successfully!"
         echo "📊 Terraform Outputs:"
         terraform output
@@ -217,30 +217,30 @@ jobs:
       if: steps.action.outputs.action == 'apply'
       run: |
         echo "🧪 Testing deployed infrastructure..."
-        
+
         # Get outputs
         STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn)
         S3_BUCKET=$(terraform output -raw s3_bucket_name)
-        
+
         echo "Step Function ARN: $STEP_FUNCTION_ARN"
         echo "S3 Bucket: $S3_BUCKET"
-        
+
         # Test Step Function execution
         EXECUTION_ARN=$(aws stepfunctions start-execution \
           --state-machine-arn "$STEP_FUNCTION_ARN" \
           --input '{"test": true, "source": "github-actions"}' \
           --query 'executionArn' --output text)
-        
+
         echo "Started test execution: $EXECUTION_ARN"
-        
+
         # Wait a bit and check status
         sleep 30
         STATUS=$(aws stepfunctions describe-execution \
           --execution-arn "$EXECUTION_ARN" \
           --query 'status' --output text)
-        
+
         echo "Execution status: $STATUS"
-        
+
         if [ "$STATUS" = "SUCCEEDED" ]; then
           echo "✅ Infrastructure test passed!"
         elif [ "$STATUS" = "RUNNING" ]; then

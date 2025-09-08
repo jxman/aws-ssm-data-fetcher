@@ -20,7 +20,7 @@ A complete modular Python package for fetching AWS service and region data from 
 
 ### **Core Functionality**
 - Fetches all AWS regions and services from SSM Parameter Store
-- Gets human-readable names for both regions and services  
+- Gets human-readable names for both regions and services
 - Determines which services are available in each region
 - **RSS Data Integration** - Fetches region launch dates from AWS official RSS feed
 - Outputs data in multiple formats (Excel, JSON, CSV)
@@ -68,7 +68,7 @@ A complete modular Python package for fetching AWS service and region data from 
 - **IAM**: OIDC authentication with least-privilege → **READY**
 - **GitHub Actions**: Complete CI/CD pipeline → **OPERATIONAL**
 
-### **⚡ Performance Enhancements**  
+### **⚡ Performance Enhancements**
 - **Smart caching** with automatic tier promotion
 - **Memory-based caching** for repeated queries
 - **S3 cross-invocation caching** for Lambda functions
@@ -83,7 +83,7 @@ A complete modular Python package for fetching AWS service and region data from 
 aws_ssm_fetcher/
 ├── core/                    ✅ COMPLETE - Foundation modules
 │   ├── config.py           ✅ Environment & Lambda config
-│   ├── cache.py            ✅ Multi-tier caching system  
+│   ├── cache.py            ✅ Multi-tier caching system
 │   ├── logging.py          ✅ CloudWatch optimized logging
 │   └── error_handling.py   ✅ Circuit breakers & retries
 ├── data_sources/           ✅ COMPLETE - Data fetching
@@ -124,7 +124,28 @@ aws_ssm_fetcher/
    pip install -r requirements.txt
    ```
 
-3. **Configure AWS credentials:**
+3. **Set up pre-commit hooks (REQUIRED for development):**
+   ```bash
+   # Install pre-commit (if not already installed)
+   brew install pre-commit  # macOS
+   # OR: pipx install pre-commit
+
+   # Install pre-commit hooks to catch formatting issues before CI
+   pre-commit install
+
+   # Test hooks on all files (optional)
+   pre-commit run --all-files
+   ```
+
+   **Pre-commit hooks will automatically:**
+   - Format Python code with Black
+   - Sort imports with isort
+   - Lint code with flake8 and mypy
+   - Format Terraform files
+   - Scan for secrets with detect-secrets
+   - Fix whitespace and file endings
+
+4. **Configure AWS credentials:**
    ```bash
    aws configure
    # OR set environment variables:
@@ -140,7 +161,7 @@ aws_ssm_fetcher/
 # Run main script (unchanged interface)
 python aws_ssm_data_fetcher.py
 
-# With options  
+# With options
 python aws_ssm_data_fetcher.py --use-cache --debug
 
 # Force fresh data
@@ -150,10 +171,10 @@ python aws_ssm_data_fetcher.py --no-cache
 ### **Modular Package Usage**
 ```python
 from aws_ssm_fetcher import (
-    SSMConfig, 
+    SSMConfig,
     ProcessingPipeline,
-    ExcelGenerator, 
-    JSONGenerator, 
+    ExcelGenerator,
+    JSONGenerator,
     CSVGenerator
 )
 from aws_ssm_fetcher.data_sources import DataSourceManager
@@ -238,6 +259,43 @@ All packages automatically deployed via Terraform:
    📦 report_generator/deployment_package.zip (16.3MB)
 ```
 
+## Development Workflow
+
+### **Code Quality Standards**
+This project uses automated code quality tools to ensure consistent formatting and catch issues early:
+
+```bash
+# Pre-commit hooks run automatically on commit and include:
+- black                 # Python code formatting
+- isort                 # Import sorting
+- flake8                # Python linting
+- mypy                  # Static type checking
+- bandit                # Security vulnerability scanning
+- terraform_fmt         # Terraform formatting
+- detect-secrets        # Secret scanning
+- trailing-whitespace   # Whitespace cleanup
+- end-of-file-fixer     # File ending normalization
+```
+
+**Development Process:**
+1. Make your changes
+2. Run tests: `python -m pytest tests/ -v`
+3. Commit (pre-commit hooks run automatically)
+4. Push to feature branch
+5. Create pull request
+
+**Manual Quality Checks:**
+```bash
+# Run pre-commit hooks manually (optional)
+pre-commit run --all-files
+
+# Run specific tools
+black .
+isort .
+flake8 .
+terraform fmt -recursive
+```
+
 ## Testing
 
 ### **Test Organization**
@@ -246,7 +304,7 @@ All tests are properly organized following best practices:
 tests/
 ├── unit/                   # Individual module tests
 │   ├── test_service_mapper.py
-│   ├── test_data_transformer.py 
+│   ├── test_data_transformer.py
 │   ├── test_statistics_analyzer.py
 │   └── test_regional_validator.py
 ├── integration/            # End-to-end pipeline tests
@@ -274,7 +332,7 @@ python lambda_functions/scripts/test_packages.py
 ```
 docs/
 ├── architecture/           # System design documents
-├── deployment/            # Deployment guides  
+├── deployment/            # Deployment guides
 ├── planning/              # Implementation roadmaps
 ├── research/              # AWS SSM exploration
 └── README.md              # Documentation index
@@ -288,7 +346,7 @@ See [docs/README.md](docs/README.md) for complete documentation index.
 
 **Prerequisites (15 minutes):**
 1. ✅ AWS account with admin access
-2. ✅ GitHub repository access: `jxman/aws-ssm-data-fetcher` 
+2. ✅ GitHub repository access: `jxman/aws-ssm-data-fetcher`
 3. ✅ AWS CLI configured locally (for initial OIDC setup)
 
 **Deployment Steps (30-45 minutes):**

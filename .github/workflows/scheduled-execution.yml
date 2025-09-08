@@ -30,7 +30,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'prod' }}
     outputs:
       infrastructure-exists: ${{ steps.check.outputs.exists }}
-    
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
       run: |
         echo "🔍 Checking if infrastructure is deployed..."
         ENV_NAME="${{ github.event.inputs.environment || 'prod' }}"
-        
+
         # Check if Step Functions state machine exists
         if aws stepfunctions list-state-machines --query "stateMachines[?contains(name, 'aws-ssm-fetcher-${ENV_NAME}')]" --output text | grep -q .; then
           echo "✅ Infrastructure appears to be deployed for environment: $ENV_NAME"
@@ -64,7 +64,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'prod' }}
     needs: check-infrastructure
     if: needs.check-infrastructure.outputs.infrastructure-exists == 'true'
-    
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -92,7 +92,7 @@ jobs:
           -backend-config="key=aws-ssm-fetcher/${{ github.event.inputs.environment || 'prod' }}/terraform.tfstate" \
           -backend-config="region=${{ env.AWS_REGION }}" \
           -backend-config="encrypt=true"
-        
+
         # Check if state file exists and has resources
         echo "🔍 Checking Terraform state..."
         if ! terraform state list >/dev/null 2>&1; then
@@ -100,7 +100,7 @@ jobs:
           echo "To deploy: gh workflow run 'Terraform Deployment' --ref main"
           exit 1
         fi
-        
+
         # Get infrastructure details with error handling
         echo "📋 Getting infrastructure outputs..."
         if STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn 2>/dev/null); then
@@ -110,7 +110,7 @@ jobs:
           echo "❌ Could not get Step Function ARN from Terraform outputs"
           exit 1
         fi
-        
+
         if S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null); then
           echo "S3_BUCKET=$S3_BUCKET" >> $GITHUB_ENV
           echo "✅ S3 Bucket: $S3_BUCKET"
@@ -118,7 +118,7 @@ jobs:
           echo "❌ Could not get S3 bucket name from Terraform outputs"
           exit 1
         fi
-        
+
         if DASHBOARD_URL=$(terraform output -raw cloudwatch_dashboard_url 2>/dev/null); then
           echo "DASHBOARD_URL=$DASHBOARD_URL" >> $GITHUB_ENV
           echo "✅ Dashboard URL: $DASHBOARD_URL"
@@ -131,15 +131,15 @@ jobs:
       id: execute
       run: |
         echo "🚀 Starting AWS SSM Data Fetcher pipeline execution..."
-        
+
         # Validate required environment variables
         if [ -z "$STEP_FUNCTION_ARN" ]; then
           echo "❌ STEP_FUNCTION_ARN is not set"
           exit 1
         fi
-        
+
         echo "📍 Using Step Function: $STEP_FUNCTION_ARN"
-        
+
         # Validate Step Function exists
         echo "🔍 Validating Step Function exists..."
         if ! aws stepfunctions describe-state-machine --state-machine-arn "$STEP_FUNCTION_ARN" >/dev/null 2>&1; then
@@ -148,12 +148,12 @@ jobs:
           exit 1
         fi
         echo "✅ Step Function validated successfully"
-        
+
         # Create execution input with proper JSON formatting
         TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
         ENVIRONMENT="${{ github.event.inputs.environment || 'prod' }}"
         EXECUTION_ID="scheduled-$(date +%Y%m%d-%H%M%S)"
-        
+
         # Create JSON input using jq for proper escaping
         EXECUTION_INPUT=$(jq -n \
           --arg source "github-actions-scheduled" \
@@ -166,13 +166,13 @@ jobs:
             environment: $environment,
             execution_id: $execution_id
           }')
-        
+
         echo "📋 Execution input:"
         echo "$EXECUTION_INPUT" | jq '.'
-        
+
         # Start execution with comprehensive error handling
         echo "▶️ Starting Step Functions execution..."
-        
+
         # Use temporary file for proper error capture
         TEMP_OUTPUT=$(mktemp)
         if aws stepfunctions start-execution \
@@ -180,12 +180,12 @@ jobs:
           --name "$EXECUTION_ID" \
           --input "$EXECUTION_INPUT" \
           --output json > "$TEMP_OUTPUT" 2>&1; then
-          
+
           EXECUTION_ARN=$(jq -r '.executionArn' "$TEMP_OUTPUT")
           echo "EXECUTION_ARN=$EXECUTION_ARN" >> $GITHUB_ENV
           echo "execution_arn=$EXECUTION_ARN" >> $GITHUB_OUTPUT
           echo "✅ Execution started successfully: $EXECUTION_ARN"
-          
+
           # Clean up temp file
           rm -f "$TEMP_OUTPUT"
         else
@@ -200,22 +200,22 @@ jobs:
       id: monitor
       run: |
         echo "⏳ Monitoring execution progress..."
-        
+
         # Validate execution ARN
         if [ -z "$EXECUTION_ARN" ]; then
           echo "❌ EXECUTION_ARN is not set"
           exit 1
         fi
-        
+
         echo "📍 Monitoring execution: $EXECUTION_ARN"
-        
+
         # Wait for execution to complete (with timeout)
         MAX_WAIT=1800  # 30 minutes
         WAIT_TIME=0
         STATUS="RUNNING"
         RETRY_COUNT=0
         MAX_RETRIES=3
-        
+
         # Initialize step summary
         {
           echo "## 📊 Execution Progress"
@@ -228,22 +228,22 @@ jobs:
           echo ""
           echo "**Started**: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)"
         } > $GITHUB_STEP_SUMMARY
-        
+
         while [ "$STATUS" = "RUNNING" ] && [ $WAIT_TIME -lt $MAX_WAIT ]; do
           sleep 60
           WAIT_TIME=$((WAIT_TIME + 60))
-          
+
           # Get status with error handling and retries
           TEMP_STATUS_FILE=$(mktemp)
           if aws stepfunctions describe-execution \
             --execution-arn "$EXECUTION_ARN" \
             --output json > "$TEMP_STATUS_FILE" 2>&1; then
-            
+
             STATUS=$(jq -r '.status' "$TEMP_STATUS_FILE" 2>/dev/null || echo "UNKNOWN")
             RETRY_COUNT=0
-            
+
             echo "Status after ${WAIT_TIME}s: $STATUS"
-            
+
             # Update step summary with progress
             {
               echo "## 📊 Execution Progress"
@@ -255,17 +255,17 @@ jobs:
               fi
               echo ""
               echo "**Last Updated**: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)"
-              
+
               # Add progress bar
               PROGRESS=$((WAIT_TIME * 100 / MAX_WAIT))
               echo ""
               echo "**Progress**: ${PROGRESS}% (${WAIT_TIME}/${MAX_WAIT}s)"
             } > $GITHUB_STEP_SUMMARY
-            
+
           else
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "⚠️ Could not get execution status (attempt $RETRY_COUNT/$MAX_RETRIES)"
-            
+
             if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
               echo "❌ Failed to get execution status after $MAX_RETRIES retries"
               echo "Error details:"
@@ -274,26 +274,26 @@ jobs:
               exit 1
             fi
           fi
-          
+
           rm -f "$TEMP_STATUS_FILE"
         done
-        
+
         # Handle timeout
         if [ $WAIT_TIME -ge $MAX_WAIT ] && [ "$STATUS" = "RUNNING" ]; then
           echo "⏰ Execution timed out after ${MAX_WAIT}s"
           STATUS="TIMED_OUT"
         fi
-        
+
         echo "status=$STATUS" >> $GITHUB_OUTPUT
         echo "execution_duration=$WAIT_TIME" >> $GITHUB_OUTPUT
-        
+
         # Get final execution details
         echo "📋 Getting final execution details..."
         TEMP_DETAILS_FILE=$(mktemp)
         if aws stepfunctions describe-execution \
           --execution-arn "$EXECUTION_ARN" \
           --output json > "$TEMP_DETAILS_FILE" 2>&1; then
-          
+
           echo "Final status: $STATUS"
           echo "Execution details:"
           cat "$TEMP_DETAILS_FILE" | jq '.'
@@ -307,14 +307,14 @@ jobs:
       if: steps.monitor.outputs.status == 'SUCCEEDED'
       run: |
         echo "✅ Pipeline execution completed successfully!"
-        
+
         # List generated reports
         echo "📄 Generated reports:"
         aws s3 ls s3://$S3_BUCKET/reports/ --recursive --human-readable
-        
+
         # Get latest reports info
         LATEST_REPORTS=$(aws s3 ls s3://$S3_BUCKET/reports/ --recursive | tail -5)
-        
+
         echo "## 🎉 Execution Completed Successfully" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📄 Generated Reports" >> $GITHUB_STEP_SUMMARY
@@ -332,25 +332,25 @@ jobs:
       run: |
         FINAL_STATUS="${{ steps.monitor.outputs.status }}"
         EXECUTION_DURATION="${{ steps.monitor.outputs.execution_duration }}"
-        
+
         echo "❌ Pipeline execution failed with status: $FINAL_STATUS"
         echo "⏱️ Execution duration: ${EXECUTION_DURATION}s"
-        
+
         # Get comprehensive failure details
         echo "🔍 Gathering failure diagnostics..."
-        
+
         TEMP_EXEC_FILE=$(mktemp)
         TEMP_HISTORY_FILE=$(mktemp)
-        
+
         # Get execution details
         if aws stepfunctions describe-execution \
           --execution-arn "$EXECUTION_ARN" \
           --output json > "$TEMP_EXEC_FILE" 2>&1; then
-          
+
           CAUSE=$(jq -r '.cause // "No cause available"' "$TEMP_EXEC_FILE")
           START_DATE=$(jq -r '.startDate' "$TEMP_EXEC_FILE")
           STOP_DATE=$(jq -r '.stopDate // "Still running"' "$TEMP_EXEC_FILE")
-          
+
           echo "📋 Execution Details:"
           echo "  Start: $START_DATE"
           echo "  Stop: $STOP_DATE"
@@ -359,20 +359,20 @@ jobs:
           echo "⚠️ Could not retrieve execution details"
           CAUSE="Could not retrieve failure details"
         fi
-        
+
         # Get execution history for more detailed diagnostics
         if aws stepfunctions get-execution-history \
           --execution-arn "$EXECUTION_ARN" \
           --max-items 10 \
           --reverse-order \
           --output json > "$TEMP_HISTORY_FILE" 2>&1; then
-          
+
           echo "📜 Recent execution events:"
           jq -r '.events[] | "\(.timestamp) [\(.type)]: \(.stateEnteredEventDetails.name // .stateExitedEventDetails.name // .taskFailedEventDetails.resourceType // "N/A")"' "$TEMP_HISTORY_FILE" | head -10
         else
           echo "⚠️ Could not retrieve execution history"
         fi
-        
+
         # Create comprehensive failure summary
         {
           echo "## ❌ Execution Failed"
@@ -381,7 +381,7 @@ jobs:
           echo "**Duration**: ${EXECUTION_DURATION}s"
           echo "**Execution ARN**: \`$(basename "$EXECUTION_ARN")\`"
           echo ""
-          
+
           if [ "$FINAL_STATUS" = "TIMED_OUT" ]; then
             echo "**Issue**: Execution exceeded the 30-minute timeout limit"
             echo ""
@@ -397,7 +397,7 @@ jobs:
             echo "\`\`\`"
             echo ""
           fi
-          
+
           echo "**Troubleshooting Steps**:"
           echo "1. 🔍 [View CloudWatch Dashboard]($DASHBOARD_URL)"
           echo "2. 📋 Check Step Functions execution in AWS Console"
@@ -410,23 +410,23 @@ jobs:
           echo ""
           echo "**Execution Time**: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)"
         } > $GITHUB_STEP_SUMMARY
-        
+
         # Clean up temp files
         rm -f "$TEMP_EXEC_FILE" "$TEMP_HISTORY_FILE"
-        
+
         exit 1
 
     - name: Cleanup Old Reports
       if: steps.monitor.outputs.status == 'SUCCEEDED'
       run: |
         echo "🧹 Cleaning up old reports..."
-        
+
         # Keep only the last 30 days of reports
         CUTOFF_DATE=$(date -d "30 days ago" +%Y-%m-%d 2>/dev/null || date -v-30d +%Y-%m-%d)
-        
+
         # This is a simple cleanup - in production you might want more sophisticated logic
         echo "Keeping reports newer than $CUTOFF_DATE"
-        
+
         # The S3 lifecycle policies in Terraform handle this automatically,
         # but this provides manual cleanup if needed
         echo "✅ Cleanup completed (handled by S3 lifecycle policies)"
@@ -450,7 +450,7 @@ jobs:
         echo "To deploy infrastructure: gh workflow run 'Terraform Deployment' --ref main"
         # Add informational notification here if needed
 
-    - name: Notify Failure  
+    - name: Notify Failure
       if: needs.execute-pipeline.result == 'failure'
       run: |
         echo "❌ Scheduled execution failed"

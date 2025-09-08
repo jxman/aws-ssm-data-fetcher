@@ -26,7 +26,7 @@ aws_ssm_data_fetcher/
 │   ├── data_sources/                   # External data collection
 │   │   ├── __init__.py
 │   │   ├── aws_ssm_client.py          # AWS SSM Parameter Store client
-│   │   ├── rss_client.py              # RSS feed parser  
+│   │   ├── rss_client.py              # RSS feed parser
 │   │   └── base.py                     # Base data source interface
 │   ├── processors/                     # Data processing logic
 │   │   ├── __init__.py
@@ -44,7 +44,7 @@ aws_ssm_data_fetcher/
 │       └── main.py                     # CLI entry point
 ├── tests/                              # Unit tests
 │   ├── test_data_sources/
-│   ├── test_processors/  
+│   ├── test_processors/
 │   ├── test_outputs/
 │   └── test_integration/
 ├── requirements.txt
@@ -101,7 +101,7 @@ class PDFGenerator(OutputGenerator):
 
 **Phase 1: Extract Core Components (Week 1)**
 1. Create `core/config.py` - move all configuration logic
-2. Create `core/cache.py` - move caching functionality  
+2. Create `core/cache.py` - move caching functionality
 3. Update current script to use these modules
 
 **Phase 2: Extract Data Sources (Week 2)**
@@ -109,7 +109,7 @@ class PDFGenerator(OutputGenerator):
 2. Create `data_sources/rss_client.py` - move RSS functionality
 3. Update script to use new data source classes
 
-**Phase 3: Extract Processors (Week 3)**  
+**Phase 3: Extract Processors (Week 3)**
 1. Create `processors/service_mapper.py` - move mapping logic
 2. Create `processors/data_transformer.py` - move transformation logic
 3. Create `processors/statistics.py` - move statistics calculations
@@ -145,10 +145,10 @@ class PDFGenerator(OutputGenerator):
 ```python
 # Data Fetcher Service API
 POST /api/v1/fetch/regions
-POST /api/v1/fetch/services  
+POST /api/v1/fetch/services
 POST /api/v1/fetch/service-regions
 
-# Processor Service API  
+# Processor Service API
 POST /api/v1/process/service-mapping
 POST /api/v1/process/statistics
 POST /api/v1/process/transform
@@ -175,7 +175,7 @@ class DataSourceFactory:
 ```
 
 **🎯 Strategy Pattern for Output Generation:**
-```python  
+```python
 class OutputStrategy(ABC):
     @abstractmethod
     def generate(self, data: Dict, output_path: str) -> bool:
@@ -190,12 +190,12 @@ class ExcelOutputStrategy(OutputStrategy):
 **⚡ Dependency Injection:**
 ```python
 class DataProcessor:
-    def __init__(self, 
+    def __init__(self,
                  data_source: DataSource,
                  cache_manager: CacheManager,
                  output_generator: OutputGenerator):
         self.data_source = data_source
-        self.cache_manager = cache_manager  
+        self.cache_manager = cache_manager
         self.output_generator = output_generator
 ```
 
@@ -207,7 +207,7 @@ class DataProcessor:
 tests/
 ├── test_data_sources/
 │   ├── test_aws_ssm_client.py      # Mock AWS API calls
-│   └── test_rss_client.py          # Mock HTTP requests  
+│   └── test_rss_client.py          # Mock HTTP requests
 ├── test_processors/
 │   ├── test_service_mapper.py      # Test with known data
 │   └── test_statistics.py          # Test calculations
@@ -224,12 +224,12 @@ def test_full_pipeline():
     fetcher = DataFetcher(config)
     processor = DataProcessor(config)
     generator = ReportGenerator(config)
-    
+
     # Test full pipeline
     raw_data = fetcher.fetch_all_data()
-    processed_data = processor.process(raw_data)  
+    processed_data = processor.process(raw_data)
     reports = generator.generate_all(processed_data)
-    
+
     assert len(reports) == 3  # Excel, JSON, CSV
 ```
 
@@ -247,12 +247,12 @@ class AWSSSMClient:
     def fetch_all_service_regions(self, services: List[str]) -> Dict:
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = {
-                executor.submit(self.get_service_regions, svc): svc 
+                executor.submit(self.get_service_regions, svc): svc
                 for svc in services
             }
             return {futures[f]: f.result() for f in futures}
 
-# Independent scaling of components  
+# Independent scaling of components
 # - Scale data fetching: Add more AWS API workers
 # - Scale processing: Add more transformation workers
 # - Scale output: Add more report generators
@@ -294,7 +294,7 @@ def lambda_handler(event, context):
 
 **Week 2: Data Layer**
 - Extract AWS SSM client
-- Extract RSS client  
+- Extract RSS client
 - Add comprehensive data source tests
 
 **Week 3: Processing Layer**
@@ -302,7 +302,7 @@ def lambda_handler(event, context):
 - Extract data transformation logic
 - Extract statistics calculations
 
-**Week 4: Output Layer**  
+**Week 4: Output Layer**
 - Extract Excel generation
 - Extract JSON generation
 - Extract CSV generation
