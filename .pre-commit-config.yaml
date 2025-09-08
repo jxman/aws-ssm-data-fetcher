@@ -47,6 +47,9 @@ repos:
         description: Format Terraform files
         args: ['--args=-recursive']
 
+  # Note: MyPy type checking is disabled in pre-commit due to module conflicts
+  # It still runs in GitHub Actions CI for full validation
+
   # Secrets scanning
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
