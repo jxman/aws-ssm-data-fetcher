@@ -94,10 +94,13 @@ module "lambda_data_fetcher" {
   memory_size = 1024 # 1GB
 
   environment_variables = {
-    S3_BUCKET    = module.s3_storage.bucket_name
-    CACHE_PREFIX = "cache"
-    LOG_LEVEL    = var.log_level
-    ENVIRONMENT  = var.environment
+    S3_BUCKET        = module.s3_storage.bucket_name
+    OUTPUT_S3_BUCKET = module.s3_storage.bucket_name
+    CACHE_S3_BUCKET  = module.s3_storage.bucket_name
+    S3_CACHE_BUCKET  = module.s3_storage.bucket_name
+    CACHE_PREFIX     = "cache"
+    LOG_LEVEL        = var.log_level
+    ENVIRONMENT      = var.environment
   }
 
   common_tags = local.common_tags
@@ -119,10 +122,13 @@ module "lambda_processor" {
   memory_size = 3008 # 3GB (for pandas/numpy processing)
 
   environment_variables = {
-    S3_BUCKET    = module.s3_storage.bucket_name
-    CACHE_PREFIX = "cache"
-    LOG_LEVEL    = var.log_level
-    ENVIRONMENT  = var.environment
+    S3_BUCKET        = module.s3_storage.bucket_name
+    OUTPUT_S3_BUCKET = module.s3_storage.bucket_name
+    CACHE_S3_BUCKET  = module.s3_storage.bucket_name
+    S3_CACHE_BUCKET  = module.s3_storage.bucket_name
+    CACHE_PREFIX     = "cache"
+    LOG_LEVEL        = var.log_level
+    ENVIRONMENT      = var.environment
   }
 
   common_tags = local.common_tags
@@ -144,10 +150,13 @@ module "lambda_report_generator" {
   memory_size = 2048 # 2GB
 
   environment_variables = {
-    S3_BUCKET     = module.s3_storage.bucket_name
-    OUTPUT_PREFIX = "reports"
-    LOG_LEVEL     = var.log_level
-    ENVIRONMENT   = var.environment
+    S3_BUCKET        = module.s3_storage.bucket_name
+    OUTPUT_S3_BUCKET = module.s3_storage.bucket_name
+    CACHE_S3_BUCKET  = module.s3_storage.bucket_name
+    S3_CACHE_BUCKET  = module.s3_storage.bucket_name
+    OUTPUT_PREFIX    = "reports"
+    LOG_LEVEL        = var.log_level
+    ENVIRONMENT      = var.environment
   }
 
   common_tags = local.common_tags

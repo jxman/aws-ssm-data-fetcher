@@ -89,3 +89,38 @@ terraform.rc
 # Allow environment-specific configuration files
 !environments/*.tfvars
 !terraform/environments/*.tfvars
+
+# Lambda deployment artifacts - keep repository clean
+lambda_functions/**/deployment_package.zip
+lambda_functions/**/*_v*.zip
+lambda_functions/**/*_updated.zip
+lambda_functions/**/layer.zip
+lambda_functions/**/response.json
+lambda_functions/**/test_payload.json
+lambda_functions/**/*-layer-v*.zip
+lambda_functions/heavy_deps_layer/
+
+# Keep the main deployment packages for documentation but ignore variants
+!lambda_functions/data_fetcher.zip
+!lambda_functions/processor.zip
+!lambda_functions/report_generator.zip
+!lambda_functions/shared_layer.zip
+
+# Lambda layer dependencies (auto-generated)
+lambda_functions/shared_layer/python/bin/
+lambda_functions/shared_layer/python/certifi*/
+lambda_functions/shared_layer/python/charset_normalizer*/
+lambda_functions/shared_layer/python/dateutil/
+lambda_functions/shared_layer/python/et_xmlfile*/
+lambda_functions/shared_layer/python/feedparser*/
+lambda_functions/shared_layer/python/idna*/
+lambda_functions/shared_layer/python/numpy*/
+lambda_functions/shared_layer/python/openpyxl*/
+lambda_functions/shared_layer/python/pandas*/
+lambda_functions/shared_layer/python/python_dateutil*/
+lambda_functions/shared_layer/python/pytz*/
+lambda_functions/shared_layer/python/requests*/
+lambda_functions/shared_layer/python/sgmllib*
+lambda_functions/shared_layer/python/six*
+lambda_functions/shared_layer/python/tzdata*/
+lambda_functions/shared_layer/python/urllib3*/

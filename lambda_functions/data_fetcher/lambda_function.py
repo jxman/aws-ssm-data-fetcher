@@ -53,10 +53,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         from aws_ssm_fetcher.core.cache import CacheManager
         from aws_ssm_fetcher.core.config import Config
         from aws_ssm_fetcher.data_sources.rss_client import RSSClient
-        from aws_ssm_fetcher.processors.regional_validator import (
-            RegionDiscoverer,
-            ServiceDiscoverer,
-        )
+        from aws_ssm_fetcher.processors import RegionDiscoverer, ServiceDiscoverer
 
         # Create Lambda-optimized configuration
         lambda_config = Config.for_lambda("data_fetcher")
@@ -68,7 +65,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         # Initialize data discoverers
         region_discoverer = RegionDiscoverer(None)
         service_discoverer = ServiceDiscoverer(None)
-        rss_client = RSSClient(lambda_config, cache_manager)
+        rss_client = RSSClient(cache_manager)
 
         # Fetch data
         logger.info("Discovering AWS regions...")
@@ -78,7 +75,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         services_data = service_discoverer.process({})
 
         logger.info("Fetching RSS feed data...")
-        rss_data = rss_client.fetch_region_data()
+        rss_data = rss_client.fetch_region_rss_data()
 
         # Prepare data package for processing
         raw_data = {
@@ -124,6 +121,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
 
         # Return success response
         response = {
+            "status": "success",
             "statusCode": 200,
             "execution_id": execution_id,
             "message": "Data fetching completed successfully",
@@ -143,6 +141,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         logger.error(error_msg, exc_info=True)
 
         return {
+            "status": "failed",
             "statusCode": 500,
             "execution_id": execution_id,
             "error": error_msg,
