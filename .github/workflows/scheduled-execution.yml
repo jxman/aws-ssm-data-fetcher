@@ -103,28 +103,65 @@ jobs:
 
         # Get infrastructure details with error handling
         echo "📋 Getting infrastructure outputs..."
-        if STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn 2>/dev/null); then
-          echo "STEP_FUNCTION_ARN=$STEP_FUNCTION_ARN" >> $GITHUB_ENV
-          echo "✅ Step Function ARN: $STEP_FUNCTION_ARN"
+
+        # Use a safer method to set environment variables, avoiding ANSI codes
+        if STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn 2>/dev/null | tr -d '\033' | sed 's/\[[0-9;]*[mGK]//g'); then
+          if [ -n "$STEP_FUNCTION_ARN" ] && [ "$STEP_FUNCTION_ARN" != "null" ]; then
+            {
+              echo "STEP_FUNCTION_ARN<<EOF"
+              echo "$STEP_FUNCTION_ARN"
+              echo "EOF"
+            } >> $GITHUB_ENV
+            echo "✅ Step Function ARN: $STEP_FUNCTION_ARN"
+          else
+            echo "❌ Step Function ARN is empty or null"
+            exit 1
+          fi
         else
           echo "❌ Could not get Step Function ARN from Terraform outputs"
           exit 1
         fi
 
-        if S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null); then
-          echo "S3_BUCKET=$S3_BUCKET" >> $GITHUB_ENV
-          echo "✅ S3 Bucket: $S3_BUCKET"
+        if S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null | tr -d '\033' | sed 's/\[[0-9;]*[mGK]//g'); then
+          if [ -n "$S3_BUCKET" ] && [ "$S3_BUCKET" != "null" ]; then
+            {
+              echo "S3_BUCKET<<EOF"
+              echo "$S3_BUCKET"
+              echo "EOF"
+            } >> $GITHUB_ENV
+            echo "✅ S3 Bucket: $S3_BUCKET"
+          else
+            echo "❌ S3 Bucket name is empty or null"
+            exit 1
+          fi
         else
           echo "❌ Could not get S3 bucket name from Terraform outputs"
           exit 1
         fi
 
-        if DASHBOARD_URL=$(terraform output -raw cloudwatch_dashboard_url 2>/dev/null); then
-          echo "DASHBOARD_URL=$DASHBOARD_URL" >> $GITHUB_ENV
-          echo "✅ Dashboard URL: $DASHBOARD_URL"
+        if DASHBOARD_URL=$(terraform output -raw cloudwatch_dashboard_url 2>/dev/null | tr -d '\033' | sed 's/\[[0-9;]*[mGK]//g'); then
+          if [ -n "$DASHBOARD_URL" ] && [ "$DASHBOARD_URL" != "null" ]; then
+            {
+              echo "DASHBOARD_URL<<EOF"
+              echo "$DASHBOARD_URL"
+              echo "EOF"
+            } >> $GITHUB_ENV
+            echo "✅ Dashboard URL: $DASHBOARD_URL"
+          else
+            echo "⚠️ Dashboard URL is empty (this is optional)"
+            {
+              echo "DASHBOARD_URL<<EOF"
+              echo ""
+              echo "EOF"
+            } >> $GITHUB_ENV
+          fi
         else
           echo "⚠️ Could not get Dashboard URL (this is optional)"
-          echo "DASHBOARD_URL=" >> $GITHUB_ENV
+          {
+            echo "DASHBOARD_URL<<EOF"
+            echo ""
+            echo "EOF"
+          } >> $GITHUB_ENV
         fi
 
     - name: Execute Step Function

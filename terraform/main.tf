@@ -11,12 +11,10 @@ terraform {
     }
   }
 
-  # backend "s3" {
-  #   # Configure backend in terraform init
-  #   # bucket = "your-terraform-state-bucket"
-  #   # key    = "aws-ssm-fetcher/terraform.tfstate"
-  #   # region = "us-east-1"
-  # }
+  backend "s3" {
+    # Backend configuration provided via terraform init
+    # Use -backend-config parameters for bucket, key, region, encrypt
+  }
 }
 
 provider "aws" {
