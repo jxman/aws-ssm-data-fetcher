@@ -158,6 +158,7 @@ jobs:
           -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
           -out=tfplan-${{ steps.env.outputs.environment }} \
           -detailed-exitcode
+        echo "plan_exitcode=$?" >> $GITHUB_OUTPUT
       continue-on-error: true
 
     - name: Update Pull Request
@@ -168,10 +169,14 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
+          const exitCode = '${{ steps.plan.outputs.plan_exitcode }}';
+          const planStatus = exitCode === '0' ? 'No Changes' : exitCode === '2' ? 'Changes Detected' : 'Failed';
+          const statusIcon = exitCode === '1' ? '❌' : '✅';
+
           const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
           #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
           #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+          #### Terraform Plan 📖${statusIcon} \`${planStatus}\`
 
           <details><summary>Show Plan</summary>
 
@@ -191,11 +196,13 @@ jobs:
           })
 
     - name: Terraform Plan Status
-      if: steps.plan.outcome == 'failure'
-      run: exit 1
+      if: steps.plan.outputs.plan_exitcode == '1'
+      run: |
+        echo "❌ Terraform plan failed with actual error (exit code 1)"
+        exit 1
 
     - name: Terraform Apply
-      if: steps.action.outputs.action == 'apply' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+      if: steps.action.outputs.action == 'apply' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
       run: |
         terraform apply \
           -auto-approve \
@@ -214,7 +221,7 @@ jobs:
         echo "🗑️ Infrastructure destroyed successfully!"
 
     - name: Test Infrastructure
-      if: steps.action.outputs.action == 'apply'
+      if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
       run: |
         echo "🧪 Testing deployed infrastructure..."
 
@@ -251,7 +258,7 @@ jobs:
         fi
 
     - name: Deployment Summary
-      if: steps.action.outputs.action == 'apply'
+      if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
       run: |
         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
