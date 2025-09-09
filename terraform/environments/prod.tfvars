@@ -9,9 +9,9 @@ retention_days           = 30
 enable_sns_notifications = true
 sns_email                = "production-alerts@example.com" # Update with actual email
 
-# Scheduling (enabled for production)
-enable_scheduled_execution = true
-schedule_expression        = "rate(24 hours)" # Daily execution
+# EventBridge scheduling (enabled for production)
+eventbridge_enabled             = true
+eventbridge_schedule_expression = "cron(0 6 * * ? *)" # Daily at 6 AM UTC
 
 # S3 configuration
 s3_force_destroy = false # Protect production data

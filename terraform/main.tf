@@ -193,3 +193,17 @@ module "cloudwatch" {
   enable_sns_notifications = var.enable_sns_notifications
   sns_email                = var.sns_email
 }
+
+# EventBridge for scheduled execution
+module "eventbridge" {
+  source = "./modules/eventbridge"
+
+  project_name      = local.project_name
+  environment       = var.environment
+  step_function_arn = module.step_functions.state_machine_arn
+  common_tags       = local.common_tags
+
+  # Schedule: Daily at 6 AM UTC (can be customized via variables)
+  schedule_expression = var.eventbridge_schedule_expression
+  enabled             = var.eventbridge_enabled
+}

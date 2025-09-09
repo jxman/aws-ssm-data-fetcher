@@ -9,9 +9,9 @@ retention_days           = 7
 enable_sns_notifications = false
 sns_email                = ""
 
-# Scheduling (disabled for dev)
-enable_scheduled_execution = false
-schedule_expression        = "rate(24 hours)"
+# EventBridge scheduling (disabled for dev)
+eventbridge_enabled             = false
+eventbridge_schedule_expression = "cron(0 6 * * ? *)" # Daily at 6 AM UTC (when enabled)
 
 # S3 configuration
 s3_force_destroy = true # Allow destruction with objects for dev environment

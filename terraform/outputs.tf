@@ -53,6 +53,27 @@ output "iam_step_functions_role_arn" {
   value       = module.iam.step_functions_role_arn
 }
 
+# EventBridge outputs
+output "eventbridge_rule_arn" {
+  description = "ARN of the EventBridge rule for scheduled execution"
+  value       = module.eventbridge.eventbridge_rule_arn
+}
+
+output "eventbridge_rule_name" {
+  description = "Name of the EventBridge rule"
+  value       = module.eventbridge.eventbridge_rule_name
+}
+
+output "eventbridge_schedule_expression" {
+  description = "Schedule expression for EventBridge rule"
+  value       = module.eventbridge.schedule_expression
+}
+
+output "eventbridge_iam_role_arn" {
+  description = "ARN of the IAM role used by EventBridge"
+  value       = module.eventbridge.eventbridge_iam_role_arn
+}
+
 # Useful information for CLI and local development
 output "deployment_info" {
   description = "Information for deployment and testing"
@@ -65,6 +86,11 @@ output "deployment_info" {
       data_fetcher     = module.lambda_data_fetcher.function_name
       processor        = module.lambda_processor.function_name
       report_generator = module.lambda_report_generator.function_name
+    }
+    eventbridge = {
+      rule_name           = module.eventbridge.eventbridge_rule_name
+      schedule_expression = module.eventbridge.schedule_expression
+      enabled             = var.eventbridge_enabled
     }
   }
 }
