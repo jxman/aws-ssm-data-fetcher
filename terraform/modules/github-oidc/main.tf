@@ -86,6 +86,8 @@ resource "aws_iam_policy" "github_actions_policy" {
           "s3:PutBucketEncryption",
           "s3:GetBucketTagging",
           "s3:PutBucketTagging",
+          "s3:GetBucketCORS",
+          "s3:PutBucketCORS",
           "s3:CreateBucket",
           "s3:DeleteBucket"
         ]
