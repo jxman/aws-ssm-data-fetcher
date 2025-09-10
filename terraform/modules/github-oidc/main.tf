@@ -84,6 +84,8 @@ resource "aws_iam_policy" "github_actions_policy" {
           "s3:PutBucketLifecycleConfiguration",
           "s3:GetBucketEncryption",
           "s3:PutBucketEncryption",
+          "s3:GetBucketTagging",
+          "s3:PutBucketTagging",
           "s3:CreateBucket",
           "s3:DeleteBucket"
         ]
@@ -195,6 +197,7 @@ resource "aws_iam_policy" "github_actions_policy" {
           "logs:TagLogGroup",
           "logs:UntagLogGroup",
           "logs:ListTagsLogGroup",
+          "logs:ListTagsForResource",
           "logs:CreateLogStream",
           "logs:DeleteLogStream",
           "logs:DescribeLogStreams",
@@ -268,7 +271,8 @@ resource "aws_iam_policy" "github_actions_policy" {
           "sns:ListTopics",
           "sns:TagResource",
           "sns:UntagResource",
-          "sns:ListTagsForResource"
+          "sns:ListTagsForResource",
+          "sns:GetSubscriptionAttributes"
         ]
         Resource = [
           "arn:aws:sns:*:*:${var.project_name}-*"
