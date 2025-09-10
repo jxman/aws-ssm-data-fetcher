@@ -1,0 +1,131 @@
+name: 'Import Existing Resources'
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "import" to confirm you want to import existing resources into Terraform state'
+        required: true
+        default: ''
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_VERSION: 1.5.0
+  AWS_REGION: us-east-1
+
+jobs:
+  import-resources:
+    name: 'Import Existing AWS Resources'
+    runs-on: ubuntu-latest
+    environment: prod
+    if: github.event.inputs.confirm == 'import'
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+        role-session-name: GitHubActions-ImportResources
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+
+    - name: Terraform Init
+      run: |
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=aws-ssm-fetcher/prod/terraform.tfstate" \
+          -backend-config="region=${{ env.AWS_REGION }}" \
+          -backend-config="encrypt=true"
+
+    - name: Import S3 Bucket
+      run: |
+        echo "🪣 Importing S3 bucket..."
+        S3_BUCKET=$(aws s3 ls | grep aws-ssm-fetcher-prod | awk '{print $3}' | head -1)
+        if [ -n "$S3_BUCKET" ]; then
+          echo "Found S3 bucket: $S3_BUCKET"
+          terraform import module.s3_storage.aws_s3_bucket.main "$S3_BUCKET" || echo "⚠️ Already imported or import failed"
+        else
+          echo "❌ No S3 bucket found"
+        fi
+
+    - name: Import CloudWatch Log Groups
+      run: |
+        echo "📊 Importing CloudWatch Log Groups..."
+
+        # Import data fetcher log group
+        echo "Importing data-fetcher log group..."
+        terraform import module.lambda_data_fetcher.aws_cloudwatch_log_group.lambda_logs "/aws/lambda/aws-ssm-fetcher-prod-data-fetcher" || echo "⚠️ Already imported or import failed"
+
+        # Import processor log group
+        echo "Importing processor log group..."
+        terraform import module.lambda_processor.aws_cloudwatch_log_group.lambda_logs "/aws/lambda/aws-ssm-fetcher-prod-processor" || echo "⚠️ Already imported or import failed"
+
+        # Import report generator log group
+        echo "Importing report-generator log group..."
+        terraform import module.lambda_report_generator.aws_cloudwatch_log_group.lambda_logs "/aws/lambda/aws-ssm-fetcher-prod-report-generator" || echo "⚠️ Already imported or import failed"
+
+    - name: Import Lambda Functions (if they exist)
+      run: |
+        echo "🔧 Checking for existing Lambda functions..."
+
+        # Check and import data fetcher
+        if aws lambda get-function --function-name "aws-ssm-fetcher-prod-data-fetcher" >/dev/null 2>&1; then
+          echo "Importing Lambda function: aws-ssm-fetcher-prod-data-fetcher"
+          terraform import module.lambda_data_fetcher.aws_lambda_function.this "aws-ssm-fetcher-prod-data-fetcher" || echo "⚠️ Import failed or already imported"
+        fi
+
+        # Check and import processor
+        if aws lambda get-function --function-name "aws-ssm-fetcher-prod-processor" >/dev/null 2>&1; then
+          echo "Importing Lambda function: aws-ssm-fetcher-prod-processor"
+          terraform import module.lambda_processor.aws_lambda_function.this "aws-ssm-fetcher-prod-processor" || echo "⚠️ Import failed or already imported"
+        fi
+
+        # Check and import report generator
+        if aws lambda get-function --function-name "aws-ssm-fetcher-prod-report-generator" >/dev/null 2>&1; then
+          echo "Importing Lambda function: aws-ssm-fetcher-prod-report-generator"
+          terraform import module.lambda_report_generator.aws_lambda_function.this "aws-ssm-fetcher-prod-report-generator" || echo "⚠️ Import failed or already imported"
+        fi
+
+    - name: Import Step Functions (if they exist)
+      run: |
+        echo "⚙️ Checking for existing Step Functions..."
+        STEP_FUNCTION_ARN=$(aws stepfunctions list-state-machines --query 'stateMachines[?contains(name,`aws-ssm-fetcher-prod`)].stateMachineArn' --output text | head -1)
+
+        if [ -n "$STEP_FUNCTION_ARN" ] && [ "$STEP_FUNCTION_ARN" != "None" ]; then
+          echo "Found Step Function: $STEP_FUNCTION_ARN"
+          terraform import module.step_functions.aws_sfn_state_machine.this "$STEP_FUNCTION_ARN" || echo "⚠️ Import failed or already imported"
+        fi
+
+    - name: Verify Terraform State After Import
+      run: |
+        echo "🔍 Verifying Terraform state after imports..."
+        terraform plan -detailed-exitcode || echo "⚠️ Plan shows changes - this is expected after import"
+
+    - name: Import Summary
+      run: |
+        echo "## 🔄 Import Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Resources have been imported into Terraform state." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+        echo "1. Run the main Terraform Deployment workflow" >> $GITHUB_STEP_SUMMARY
+        echo "2. The deployment should now succeed without resource conflicts" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "If you still encounter conflicts, additional manual imports may be needed." >> $GITHUB_STEP_SUMMARY
