@@ -25,8 +25,8 @@ The infrastructure creates a complete serverless data processing pipeline **now 
                                  ▼
            ┌─────────────────────────────────────────┐
            │        🟢 AWS Infrastructure LIVE       │
-           │  S3: aws-ssm-fetcher-dev-mwik8mc3      │
-           │  Step Functions: aws-ssm-fetcher-dev    │
+           │  S3: aws-ssm-fetcher-prod-*             │
+           │  Step Functions: aws-ssm-fetcher-prod   │
            │  CloudWatch Dashboard & Monitoring      │
            └─────────────────────────────────────────┘
 ```
@@ -34,23 +34,23 @@ The infrastructure creates a complete serverless data processing pipeline **now 
 ## ✅ Resources Successfully Deployed
 
 ### Core Infrastructure (✅ LIVE)
-- **S3 Bucket**: `aws-ssm-fetcher-dev-mwik8mc3` → Active with lifecycle policies
+- **S3 Bucket**: `aws-ssm-fetcher-prod-*` → Active with lifecycle policies
 - **IAM Roles & Policies**: Lambda execution, Step Functions, CloudWatch Events → Applied
 - **CloudWatch**: Log groups, dashboard, alarms, and monitoring → Operational
 
 ### Lambda Functions (✅ DEPLOYED)
-- **Data Fetcher**: `aws-ssm-fetcher-dev-data-fetcher` → Operational
-- **Processor**: `aws-ssm-fetcher-dev-processor` → Operational
-- **Report Generator**: `aws-ssm-fetcher-dev-report-generator` → Operational
+- **Data Fetcher**: `aws-ssm-fetcher-prod-data-fetcher` → Operational
+- **Processor**: `aws-ssm-fetcher-prod-processor` → Operational
+- **Report Generator**: `aws-ssm-fetcher-prod-report-generator` → Operational
 - **Shared Layer**: Common modules shared across all functions → Active
 
 ### Orchestration (✅ OPERATIONAL)
-- **Step Functions**: `aws-ssm-fetcher-dev-pipeline` → Active and monitoring enabled
+- **Step Functions**: `aws-ssm-fetcher-prod-pipeline` → Active and monitoring enabled
 - **CloudWatch Events**: Ready for scheduled execution
 - **SNS**: Notifications configured for success/failure events
 
 ### Monitoring (✅ ACTIVE)
-- **CloudWatch Dashboard**: `aws-ssm-fetcher-dev-dashboard` → Live monitoring
+- **CloudWatch Dashboard**: `aws-ssm-fetcher-prod-dashboard` → Live monitoring
 - **CloudWatch Alarms**: Error and duration monitoring → Enabled
 - **Dead Letter Queues**: Failed execution handling → Configured
 
@@ -62,10 +62,7 @@ terraform/
 ├── variables.tf                # Input variables
 ├── outputs.tf                  # Output values
 ├── README.md                   # This file
-├── environments/               # Environment-specific configurations
-│   ├── dev.tfvars
-│   ├── staging.tfvars
-│   └── prod.tfvars
+├── terraform.tfvars            # Production configuration variables
 └── modules/                    # Reusable Terraform modules
     ├── s3/                     # S3 bucket configuration
     ├── iam/                    # IAM roles and policies
@@ -98,50 +95,29 @@ terraform init \
 
 ### 2. Plan Deployment
 ```bash
-# Development environment
-terraform plan -var-file="environments/dev.tfvars"
-
-# Staging environment
-terraform plan -var-file="environments/staging.tfvars"
-
-# Production environment
-terraform plan -var-file="environments/prod.tfvars"
+# Production environment (PROD-only deployment)
+terraform plan
 ```
 
 ### 3. Deploy Infrastructure
 ```bash
-# Deploy to development
-terraform apply -var-file="environments/dev.tfvars"
+# Deploy to production via GitHub Actions (RECOMMENDED)
+gh workflow run "Terraform Deployment" --ref main
 
-# Deploy to staging
-terraform apply -var-file="environments/staging.tfvars"
-
-# Deploy to production
-terraform apply -var-file="environments/prod.tfvars"
+# Or deploy locally (development/testing only)
+terraform apply
 ```
 
-## Environment Configuration
+## Production Configuration
 
-### Development (dev.tfvars)
-- **Log Level**: DEBUG
-- **Monitoring**: Enabled, 7-day retention
-- **Scheduling**: Disabled
-- **Notifications**: Disabled
-- **S3**: Force destroy enabled
-
-### Staging (staging.tfvars)
+### Current Settings (terraform.tfvars)
 - **Log Level**: INFO
 - **Monitoring**: Enabled, 14-day retention
-- **Scheduling**: Every 12 hours
-- **Notifications**: Enabled
+- **Scheduling**: Daily execution (6 AM UTC)
+- **Notifications**: Enabled via SNS
 - **S3**: Protected from force destroy
-
-### Production (prod.tfvars)
-- **Log Level**: WARNING
-- **Monitoring**: Enabled, 30-day retention
-- **Scheduling**: Daily execution
-- **Notifications**: Enabled
-- **S3**: Protected from force destroy
+- **Lambda Memory**: Optimized for performance
+- **Lambda Timeout**: 15 minutes per function
 
 ## Usage After Deployment
 
@@ -152,7 +128,7 @@ terraform output step_function_arn
 
 # Execute the pipeline
 aws stepfunctions start-execution \
-  --state-machine-arn "arn:aws:states:region:account:stateMachine:aws-ssm-fetcher-dev-pipeline" \
+  --state-machine-arn "arn:aws:states:region:account:stateMachine:aws-ssm-fetcher-prod-pipeline" \
   --input '{}'
 ```
 
@@ -162,7 +138,7 @@ aws stepfunctions start-execution \
 terraform output cloudwatch_dashboard_url
 
 # View logs
-aws logs tail /aws/lambda/aws-ssm-fetcher-dev-data-fetcher --follow
+aws logs tail /aws/lambda/aws-ssm-fetcher-prod-data-fetcher --follow
 ```
 
 ### Download Reports
@@ -226,7 +202,7 @@ If the pipeline fails:
 
 ```bash
 # Destroy infrastructure (WARNING: This will delete all resources)
-terraform destroy -var-file="environments/dev.tfvars"
+terraform destroy
 ```
 
 ## Security Considerations

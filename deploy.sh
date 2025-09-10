@@ -75,9 +75,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate environment
-if [[ ! "$ENVIRONMENT" =~ ^(dev|staging|prod)$ ]]; then
-    echo -e "${RED}Error: Environment must be one of: dev, staging, prod${NC}"
+# Validate environment (PROD-only)
+if [[ "$ENVIRONMENT" != "prod" ]]; then
+    echo -e "${RED}Error: Only production environment is supported${NC}"
     exit 1
 fi
 
@@ -144,11 +144,11 @@ if [ ! -f ".terraform/terraform.tfstate" ] || [ "$ACTION" = "init" ]; then
     echo -e "${GREEN}✅ Terraform initialized${NC}"
 fi
 
-# Set Terraform variables
-TF_VAR_FILE="environments/${ENVIRONMENT}.tfvars"
+# Set Terraform variables (PROD-only)
+TF_VAR_FILE="terraform.tfvars"
 
 if [ ! -f "$TF_VAR_FILE" ]; then
-    echo -e "${RED}❌ Environment file not found: $TF_VAR_FILE${NC}"
+    echo -e "${RED}❌ Terraform variables file not found: $TF_VAR_FILE${NC}"
     exit 1
 fi
 

@@ -215,15 +215,6 @@ resource "aws_sns_topic_subscription" "email" {
   endpoint  = var.sns_email
 }
 
-# Log retention for all Lambda functions
-resource "aws_cloudwatch_log_group" "lambda_log_groups" {
-  count             = length(var.lambda_function_names)
-  name              = "/aws/lambda/${var.lambda_function_names[count.index]}"
-  retention_in_days = var.log_retention_days
-
-  tags = merge(var.common_tags, {
-    Name = "${var.project_name}-${var.environment}-${var.lambda_function_names[count.index]}-logs"
-  })
-}
+# Log retention is handled by individual Lambda modules
 
 data "aws_region" "current" {}

@@ -29,45 +29,103 @@ ENV/
 env.bak/
 venv.bak/
 
-# AWS credentials
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# AWS credentials and sensitive data
 .aws/
 credentials.json
 config.json
+secrets.json
+*.credentials
+*.pem
+*.key
+*.p12
+*.p8
+id_rsa*
+id_ed25519*
+*.ppk
 
-# IDE
+# IDE and editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# macOS
+# JetBrains
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# macOS specific
 .DS_Store
+.AppleDouble
+.LSOverride
 
-# Cache directory
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux specific
+*~
+
+# Cache directories
 .cache/
+.pytest_cache/
+.mypy_cache/
+.tox/
+.coverage
+htmlcov/
 
 # Output directory (generated files)
 output/
+reports/
+*.xlsx
+*.csv
+*.json
+!package.json
+!pyproject.toml
+!terraform/*.json
+!.github/**/*.json
 
 # Generated files in root (if accidentally created there)
 aws_regions_services.xlsx
 aws_regions_services.json
 aws_regions_services_*
+execution_summary.json
+summary.json
 
 # Logs
 *.log
+logs/
 
 # Temporary files
 *.tmp
 *.temp
 temp/
 tmp/
+.tmp/
 
-# Keep root directory clean - examples of items that should be organized
-# test_*.py files should go in tests/
-# *_example.py files should go in examples/
-# utility scripts should go in scripts/ or tools/
-# documentation should go in docs/
+# Backup files
+*.backup
+*.bak
+*.orig
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
 
 # Terraform
 **/.terraform/*
@@ -76,6 +134,8 @@ tmp/
 *.tfplan
 *-plan.out
 *-plan.tfplan
+tfplan*
+tfplan-*
 .terraform.lock.hcl
 crash.log
 crash.*.log
@@ -86,9 +146,10 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Allow environment-specific configuration files
-!environments/*.tfvars
-!terraform/environments/*.tfvars
+# Remove old multi-environment references - now PROD-only
+# Keep only the main terraform.tfvars file
+terraform/environments/
+!terraform/terraform.tfvars
 
 # Lambda deployment artifacts - keep repository clean
 lambda_functions/**/deployment_package.zip
@@ -100,13 +161,13 @@ lambda_functions/**/test_payload.json
 lambda_functions/**/*-layer-v*.zip
 lambda_functions/heavy_deps_layer/
 
-# Keep the main deployment packages for documentation but ignore variants
+# Keep main deployment packages for reference
 !lambda_functions/data_fetcher.zip
 !lambda_functions/processor.zip
 !lambda_functions/report_generator.zip
 !lambda_functions/shared_layer.zip
 
-# Lambda layer dependencies (auto-generated)
+# Lambda layer dependencies (auto-generated from pip installs)
 lambda_functions/shared_layer/python/bin/
 lambda_functions/shared_layer/python/certifi*/
 lambda_functions/shared_layer/python/charset_normalizer*/
@@ -124,3 +185,58 @@ lambda_functions/shared_layer/python/sgmllib*
 lambda_functions/shared_layer/python/six*
 lambda_functions/shared_layer/python/tzdata*/
 lambda_functions/shared_layer/python/urllib3*/
+
+# Architecture diagrams with sensitive data (if any)
+*-architecture-diagram-with-icons.svg
+*-architecture-diagram.svg
+
+# Screenshots and temporary images (except documentation images)
+screenshot.png
+temp_*.png
+temp_*.jpg
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Documentation build artifacts
+docs/_build/
+site/
+
+# Node.js (if any frontend tools are added)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Package manager lockfiles (keep for reproducible builds)
+!package-lock.json
+!yarn.lock
+!Pipfile.lock
+
+# Cloud provider CLIs
+.aws/credentials
+.azure/credentials
+.gcp/credentials.json
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Development tools
+.pre-commit-config.yaml.backup
+
+# Keep root directory organized - documentation for future contributors
+# Test files should be in tests/
+# Example files should be in examples/
+# Utility scripts should be in scripts/ or tools/
+# Documentation should be in docs/
+# Archive old/deprecated files in archived/
+
+# Allow specific configuration files that should be tracked
+!.pre-commit-config.yaml
+!.github/
+!.gitignore
+!terraform/terraform.tfvars

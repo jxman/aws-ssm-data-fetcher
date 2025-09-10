@@ -54,10 +54,10 @@ A complete modular Python package for fetching AWS service and region data from 
                                  │
                                  ▼
            ┌─────────────────────────────────────────┐
-           │      🚀 AWS Infrastructure READY        │
+           │      🚀 AWS Production Infrastructure    │
            │ S3 • IAM • CloudWatch • Step Functions │
            │        GitHub Actions CI/CD             │
-           │     Multi-Environment Support           │
+           │       OIDC Authentication               │
            └─────────────────────────────────────────┘
 ```
 
@@ -403,7 +403,7 @@ Report Formats: Excel (204KB), JSON (1.3MB), CSV (407KB)
 3. **🏗️ Deploy Infrastructure** (15 mins)
    ```bash
    # Deploy complete AWS infrastructure via GitHub Actions
-   gh workflow run "Terraform Deployment" --ref main -f environment=prod
+   gh workflow run "Terraform Deployment" --ref main
    ```
 
 4. **⚡ Execute Pipeline** (10 mins)
@@ -420,7 +420,7 @@ Report Formats: Excel (204KB), JSON (1.3MB), CSV (407KB)
 
 ### **📖 Detailed Instructions**
 
-👉 **Complete step-by-step guide**: [PRODUCTION_DEPLOYMENT_GUIDE.md](PRODUCTION_DEPLOYMENT_GUIDE.md)
+👉 **Complete step-by-step guide**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
 
 ### **🎯 What Gets Deployed**
 - **42 AWS Resources**: Complete serverless infrastructure

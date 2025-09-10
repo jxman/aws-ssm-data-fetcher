@@ -1,64 +1,51 @@
 # 📚 AWS SSM Data Fetcher - Documentation
 
-This directory contains comprehensive documentation for the AWS SSM Data Fetcher project, organized by category for easy navigation. **Project Status: 100% Complete - All infrastructure deployed and operational in AWS!** 🎉
+Comprehensive documentation for the AWS SSM Data Fetcher serverless application.
 
-## 📁 Documentation Structure
-
-### 📋 **Planning & Roadmaps**
-- [`IMPLEMENTATION_ROADMAP.md`](planning/IMPLEMENTATION_ROADMAP.md) - Complete 4-week implementation plan from monolith to modular Lambda
-- [`WEEK_1_IMPLEMENTATION.md`](planning/WEEK_1_IMPLEMENTATION.md) - Detailed Week 1: Core Utilities extraction plan
-- [`WEEK_2_IMPLEMENTATION.md`](planning/WEEK_2_IMPLEMENTATION.md) - Detailed Week 2: Data Sources extraction plan
+## 📁 Current Documentation
 
 ### 🏗️ **Architecture & Design**
-- [`MODULAR_ARCHITECTURE_GUIDE.md`](architecture/MODULAR_ARCHITECTURE_GUIDE.md) - Architectural patterns, design principles, and module structure
-- [`LAMBDA_DEPLOYMENT_ARCHITECTURE.md`](architecture/LAMBDA_DEPLOYMENT_ARCHITECTURE.md) - Lambda-specific architecture and deployment patterns
-
-### 🚀 **Deployment & Operations**
-- [`DEPLOYMENT_GUIDE.md`](deployment/DEPLOYMENT_GUIDE.md) - Step-by-step guide to deploy the Lambda function with EventBridge scheduling
+- [`MODULAR_ARCHITECTURE_GUIDE.md`](architecture/MODULAR_ARCHITECTURE_GUIDE.md) - Complete modular architecture patterns and design principles
+- [`LAMBDA_DEPLOYMENT_ARCHITECTURE.md`](architecture/LAMBDA_DEPLOYMENT_ARCHITECTURE.md) - Lambda-specific architecture and AWS deployment patterns
 
 ### 🔍 **Research & Analysis**
-- [`AWS_SSM_DATA_EXPLORATION.md`](research/AWS_SSM_DATA_EXPLORATION.md) - Research findings on AWS SSM Parameter Store data availability
+- [`AWS_SSM_DATA_EXPLORATION.md`](research/AWS_SSM_DATA_EXPLORATION.md) - Research findings on AWS SSM Parameter Store data structure and availability
+
+### 🛠️ **Development**
+- [`PRE_COMMIT_SETUP.md`](development/PRE_COMMIT_SETUP.md) - Development environment setup and pre-commit hooks configuration
 
 ## 🎯 **Quick Navigation**
 
-### For New Contributors:
-1. **Start Here**: [`../CURRENT_STATUS.md`](../CURRENT_STATUS.md) for project completion (100% complete) ✅
-2. [`IMPLEMENTATION_ROADMAP.md`](planning/IMPLEMENTATION_ROADMAP.md) for complete project overview
-3. [`MODULAR_ARCHITECTURE_GUIDE.md`](architecture/MODULAR_ARCHITECTURE_GUIDE.md) for design patterns
+### **For New Contributors:**
+1. **[Main README](../README.md)** - Project overview, features, and current status
+2. **[Deployment Guide](../DEPLOYMENT_GUIDE.md)** - Complete production deployment instructions
+3. **[Architecture Guide](architecture/MODULAR_ARCHITECTURE_GUIDE.md)** - Understanding the modular design
 
-### For Live Infrastructure (✅ DEPLOYED):
-1. [`../terraform/README.md`](../terraform/README.md) - **Complete Terraform infrastructure** (42 resources deployed)
-2. [`LAMBDA_DEPLOYMENT_ARCHITECTURE.md`](architecture/LAMBDA_DEPLOYMENT_ARCHITECTURE.md) - Live Lambda architecture
-3. [`DEPLOYMENT_GUIDE.md`](deployment/DEPLOYMENT_GUIDE.md) - Deployment completed successfully
-4. **Infrastructure Status**: All AWS resources live and operational 🟢
+### **For Operations:**
+1. **[Terraform Documentation](../terraform/README.md)** - Infrastructure as Code documentation
+2. **[Deployment Guide](../DEPLOYMENT_GUIDE.md)** - GitHub Actions deployment workflow
+3. **[Architecture Guide](architecture/LAMBDA_DEPLOYMENT_ARCHITECTURE.md)** - Understanding the AWS Lambda architecture
 
-### For Development:
-1. [`../README.md`](../README.md) - Setup and usage instructions (in root)
-2. [`WEEK_1_IMPLEMENTATION.md`](planning/WEEK_1_IMPLEMENTATION.md) & [`WEEK_2_IMPLEMENTATION.md`](planning/WEEK_2_IMPLEMENTATION.md) - Implementation details
+### **For Development:**
+1. **[Architecture Guide](architecture/MODULAR_ARCHITECTURE_GUIDE.md)** - Module structure and patterns
+2. **[Pre-commit Setup](development/PRE_COMMIT_SETUP.md)** - Development environment
+3. **[Research Documentation](research/AWS_SSM_DATA_EXPLORATION.md)** - Understanding AWS SSM data
 
-## 📊 **Documentation Stats**
-- **Total Documentation**: ~6,000+ lines across 8+ comprehensive documents
-- **Planning**: 3 documents (1,800+ lines) - Complete implementation roadmaps and status
-- **Architecture**: 2 documents (1,200+ lines) - Design patterns and complete Lambda architecture
-- **Deployment**: 2 documents (1,000+ lines) - Complete Terraform infrastructure + deployment guides
-- **Research**: 1 document (271 lines) - AWS SSM data exploration findings
-- **Infrastructure**: Complete Terraform templates with multi-environment support → **DEPLOYED**
-- **Project Status**: 100% complete with full infrastructure live in AWS production ✅
+## 📊 **Current Project Status**
+
+**✅ Production Ready**: Complete serverless infrastructure deployed and operational
+
+- **✅ Production Infrastructure**: All AWS resources deployed via GitHub Actions
+- **✅ OIDC Authentication**: Secure GitHub Actions integration
+- **✅ Automated Monitoring**: CloudWatch dashboards and alarms active
+- **✅ Daily Execution**: Scheduled pipeline running automatically
+
+## 📚 **Archived Documentation**
+
+Historical documentation including planning documents, old deployment guides, and multi-environment configurations can be found in [`../archived/documentation/`](../archived/documentation/).
 
 ---
 
-## 🎉 **Project Status: COMPLETE**
-**100% Complete**: All core architecture, processing, output generation, Lambda packages, and full AWS infrastructure successfully deployed and operational!
+**🎉 Production Infrastructure**: Complete serverless application successfully deployed and operational in AWS!
 
-**✅ DEPLOYED Infrastructure**:
-- ✅ All 42 Terraform resources created and active in AWS
-- ✅ Multi-environment configurations (dev/staging/prod) → Ready
-- ✅ Security best practices (IAM, encryption, monitoring) → Applied
-- ✅ Step Functions pipeline orchestration → Operational
-- ✅ CloudWatch monitoring and alerting → Active
-- ✅ S3 bucket: `aws-ssm-fetcher-dev-mwik8mc3` → Live
-- ✅ All Lambda functions deployed with monitoring enabled
-
-**RESULT**: Enterprise-ready serverless infrastructure successfully deployed! 🚀
-
-*For complete deployment details and infrastructure status, see [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) in the root directory.*
+For the latest deployment instructions, see **[DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md)** in the project root.
