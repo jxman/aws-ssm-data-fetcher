@@ -83,7 +83,7 @@ jobs:
     - name: Validate Terraform Configuration
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: 1.5.0
+        terraform_version: 1.13.1
 
     - name: Terraform Format Check
       run: |
