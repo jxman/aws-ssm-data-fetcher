@@ -37,8 +37,9 @@ on:
         - destroy
 
 permissions:
-  id-token: write   # This is required for requesting the JWT
-  contents: read    # This is required for actions/checkout
+  id-token: write      # This is required for requesting the JWT
+  contents: read       # This is required for actions/checkout
+  pull-requests: write # This is required for commenting on PRs
 
 env:
   TF_VERSION: 1.5.0
@@ -46,10 +47,10 @@ env:
 
 jobs:
   terraform:
-    name: 'Terraform ${{ github.event.inputs.action || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'apply') || 'plan' }}'
+    name: "Terraform ${{ github.event.inputs.action || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'apply') || 'plan' }}"
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod') || (github.ref == 'refs/heads/develop' && 'staging') || 'dev' }}
-    
+
     defaults:
       run:
         shell: bash
@@ -132,9 +133,11 @@ jobs:
         fi
 
     - name: Terraform Format Check
+      id: fmt
       run: terraform fmt -check=true -diff=true -recursive
 
     - name: Terraform Init
+      id: init
       run: |
         terraform init \
           -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
@@ -143,6 +146,7 @@ jobs:
           -backend-config="encrypt=true"
 
     - name: Terraform Validate
+      id: validate
       run: terraform validate
 
     - name: Terraform Security Scan
@@ -158,6 +162,7 @@ jobs:
           -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
           -out=tfplan-${{ steps.env.outputs.environment }} \
           -detailed-exitcode
+        echo "plan_exitcode=$?" >> $GITHUB_OUTPUT
       continue-on-error: true
 
     - name: Update Pull Request
@@ -168,21 +173,25 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
+          const exitCode = '${{ steps.plan.outputs.plan_exitcode }}';
+          const planStatus = exitCode === '0' ? 'No Changes' : exitCode === '2' ? 'Changes Detected' : 'Failed';
+          const statusIcon = exitCode === '1' ? '❌' : '✅';
+
           const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
           #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
           #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-          
+          #### Terraform Plan 📖${statusIcon} \`${planStatus}\`
+
           <details><summary>Show Plan</summary>
-          
+
           \`\`\`\n
           ${process.env.PLAN}
           \`\`\`
-          
+
           </details>
-          
+
           *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-          
+
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
@@ -191,16 +200,18 @@ jobs:
           })
 
     - name: Terraform Plan Status
-      if: steps.plan.outcome == 'failure'
-      run: exit 1
+      if: steps.plan.outputs.plan_exitcode == '1'
+      run: |
+        echo "❌ Terraform plan failed with actual error (exit code 1)"
+        exit 1
 
     - name: Terraform Apply
-      if: steps.action.outputs.action == 'apply' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+      if: steps.action.outputs.action == 'apply' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
       run: |
         terraform apply \
           -auto-approve \
           tfplan-${{ steps.env.outputs.environment }}
-        
+
         echo "🚀 Infrastructure deployed successfully!"
         echo "📊 Terraform Outputs:"
         terraform output
@@ -214,33 +225,33 @@ jobs:
         echo "🗑️ Infrastructure destroyed successfully!"
 
     - name: Test Infrastructure
-      if: steps.action.outputs.action == 'apply'
+      if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
       run: |
         echo "🧪 Testing deployed infrastructure..."
-        
+
         # Get outputs
         STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn)
         S3_BUCKET=$(terraform output -raw s3_bucket_name)
-        
+
         echo "Step Function ARN: $STEP_FUNCTION_ARN"
         echo "S3 Bucket: $S3_BUCKET"
-        
+
         # Test Step Function execution
         EXECUTION_ARN=$(aws stepfunctions start-execution \
           --state-machine-arn "$STEP_FUNCTION_ARN" \
           --input '{"test": true, "source": "github-actions"}' \
           --query 'executionArn' --output text)
-        
+
         echo "Started test execution: $EXECUTION_ARN"
-        
+
         # Wait a bit and check status
         sleep 30
         STATUS=$(aws stepfunctions describe-execution \
           --execution-arn "$EXECUTION_ARN" \
           --query 'status' --output text)
-        
+
         echo "Execution status: $STATUS"
-        
+
         if [ "$STATUS" = "SUCCEEDED" ]; then
           echo "✅ Infrastructure test passed!"
         elif [ "$STATUS" = "RUNNING" ]; then
@@ -251,7 +262,7 @@ jobs:
         fi
 
     - name: Deployment Summary
-      if: steps.action.outputs.action == 'apply'
+      if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
       run: |
         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY

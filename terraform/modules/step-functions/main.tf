@@ -36,8 +36,8 @@ resource "aws_sfn_state_machine" "main" {
         Type = "Choice"
         Choices = [
           {
-            Variable      = "$.status"
-            StringEquals  = "success"
+            Variable     = "$.status"
+            StringEquals = "success"
             Next         = "Processor"
           }
         ]
@@ -48,8 +48,8 @@ resource "aws_sfn_state_machine" "main" {
         Type     = "Task"
         Resource = var.processor_arn
         Parameters = {
-          "execution_id.$" = "$$.Execution.Name"
-          "input.$"        = "$"
+          "execution_id.$"  = "$$.Execution.Name"
+          "input.$"         = "$"
           "data_location.$" = "$.data_location"
         }
         Retry = [
@@ -74,8 +74,8 @@ resource "aws_sfn_state_machine" "main" {
         Type = "Choice"
         Choices = [
           {
-            Variable      = "$.status"
-            StringEquals  = "success"
+            Variable     = "$.status"
+            StringEquals = "success"
             Next         = "ReportGenerator"
           }
         ]
@@ -86,8 +86,8 @@ resource "aws_sfn_state_machine" "main" {
         Type     = "Task"
         Resource = var.report_generator_arn
         Parameters = {
-          "execution_id.$"     = "$$.Execution.Name"
-          "input.$"            = "$"
+          "execution_id.$"            = "$$.Execution.Name"
+          "input.$"                   = "$"
           "processed_data_location.$" = "$.processed_data_location"
         }
         Retry = [
@@ -109,32 +109,32 @@ resource "aws_sfn_state_machine" "main" {
       }
 
       SuccessNotification = {
-        Type = "Task"
+        Type     = "Task"
         Resource = "arn:aws:states:::sns:publish"
         Parameters = {
           TopicArn = aws_sns_topic.notifications.arn
           Subject  = "${var.project_name} Pipeline Success"
           Message = {
-            "execution_id.$"   = "$$.Execution.Name"
-            "status"          = "completed"
-            "reports.$"       = "$.reports"
-            "timestamp.$"     = "$$.State.EnteredTime"
+            "execution_id.$" = "$$.Execution.Name"
+            "status"         = "completed"
+            "reports.$"      = "$.reports"
+            "timestamp.$"    = "$$.State.EnteredTime"
           }
         }
         End = true
       }
 
       FailureNotification = {
-        Type = "Task"
+        Type     = "Task"
         Resource = "arn:aws:states:::sns:publish"
         Parameters = {
           TopicArn = aws_sns_topic.notifications.arn
           Subject  = "${var.project_name} Pipeline Failure"
           Message = {
             "execution_id.$" = "$$.Execution.Name"
-            "status"        = "failed"
-            "error.$"       = "$.error"
-            "timestamp.$"   = "$$.State.EnteredTime"
+            "status"         = "failed"
+            "error.$"        = "$.error"
+            "timestamp.$"    = "$$.State.EnteredTime"
           }
         }
         End = true

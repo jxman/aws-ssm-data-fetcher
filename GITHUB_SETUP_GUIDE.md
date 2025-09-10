@@ -86,11 +86,11 @@ provider "aws" {
 
 module "github_oidc" {
   source = "../terraform/modules/github-oidc"
-  
+
   project_name       = "aws-ssm-fetcher"
   github_repository  = "your-username/aws-ssm-data-fetcher"  # Replace with your repo
   tf_state_bucket    = "your-terraform-state-bucket-name"   # Replace with your bucket
-  
+
   common_tags = {
     Project     = "aws-ssm-fetcher"
     Environment = "bootstrap"
@@ -147,7 +147,7 @@ Create these environments with protection rules:
 
 #### Staging Environment
 - **Name**: `staging`
-- **Protection Rules**: 
+- **Protection Rules**:
   - Required reviewers: 1
   - Restrict to `develop` branch
 
@@ -174,7 +174,7 @@ Edit `terraform/main.tf` to include the OIDC module:
 # Add this module to your main.tf
 module "github_oidc" {
   source = "./modules/github-oidc"
-  
+
   project_name       = local.project_name
   github_repository  = "your-username/aws-ssm-data-fetcher"  # Replace with your repo
   tf_state_bucket    = "your-terraform-state-bucket-name"   # Replace with your bucket
@@ -253,7 +253,7 @@ jobs:
         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: us-east-1
         role-session-name: GitHubActions-Test
-    
+
     - name: Test AWS Access
       run: |
         aws sts get-caller-identity

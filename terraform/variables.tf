@@ -38,7 +38,7 @@ variable "retention_days" {
   default     = 14
 
   validation {
-    condition = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.retention_days)
+    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.retention_days)
     error_message = "Retention days must be a valid CloudWatch logs retention period."
   }
 }
@@ -49,16 +49,16 @@ variable "sns_email" {
   default     = ""
 }
 
-variable "schedule_expression" {
-  description = "CloudWatch Events rule schedule expression for automated runs"
+variable "eventbridge_schedule_expression" {
+  description = "EventBridge schedule expression for automated pipeline execution"
   type        = string
-  default     = "rate(24 hours)"  # Run daily
+  default     = "cron(0 6 * * ? *)" # Daily at 6 AM UTC
 }
 
-variable "enable_scheduled_execution" {
-  description = "Enable scheduled execution of the Step Function"
+variable "eventbridge_enabled" {
+  description = "Enable EventBridge scheduled execution of the Step Function"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "s3_force_destroy" {

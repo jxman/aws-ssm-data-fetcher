@@ -113,7 +113,7 @@ echo -e "${GREEN}✅ Prerequisites check passed${NC}"
 # Build Lambda packages if requested
 if [ "$BUILD_PACKAGES" = true ] && [ "$ACTION" != "destroy" ]; then
     echo -e "${YELLOW}📦 Building Lambda packages...${NC}"
-    
+
     if [ -f "lambda_functions/scripts/build_packages.sh" ]; then
         cd lambda_functions
         chmod +x scripts/build_packages.sh
@@ -157,7 +157,7 @@ case $ACTION in
         else
             terraform apply -var-file="$TF_VAR_FILE"
         fi
-        
+
         # Display outputs after successful apply
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}✅ Infrastructure deployed successfully!${NC}"
@@ -182,7 +182,7 @@ case $ACTION in
         echo -e "${RED}⚠️  WARNING: This will destroy all infrastructure for $ENVIRONMENT environment!${NC}"
         echo -e "${RED}⚠️  This action is irreversible!${NC}"
         echo ""
-        
+
         if [ "$AUTO_APPROVE" != true ]; then
             read -p "Are you sure you want to proceed? (yes/no): " confirm
             if [ "$confirm" != "yes" ]; then
@@ -190,13 +190,13 @@ case $ACTION in
                 exit 0
             fi
         fi
-        
+
         if [ "$AUTO_APPROVE" = true ]; then
             terraform destroy -var-file="$TF_VAR_FILE" -auto-approve
         else
             terraform destroy -var-file="$TF_VAR_FILE"
         fi
-        
+
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}✅ Infrastructure destroyed successfully!${NC}"
         fi

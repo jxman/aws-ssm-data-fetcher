@@ -120,14 +120,14 @@ Create environments in GitHub (`Settings > Environments`):
 
 #### **Staging Environment**
 - **Name**: `staging`
-- **Protection rules**: 
+- **Protection rules**:
   - Required reviewers: 1 person
   - Restrict to `develop` branch
 - **Environment secrets**: Same as repository secrets
 
 #### **Production Environment**
 - **Name**: `prod`
-- **Protection rules**: 
+- **Protection rules**:
   - Required reviewers: 2 people
   - Restrict to `main` branch
   - Deployment timer: 5 minutes

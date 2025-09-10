@@ -7,6 +7,14 @@ python-dateutil>=2.8.2
 # Logging enhancements (lightweight, shared by all)
 structlog>=23.2.0
 
+# HTTP requests (required by RSS client and error handling)
+requests>=2.31.0
+certifi>=2023.7.22
+urllib3>=2.0.0
+
+# RSS parsing (required by RSS client)
+feedparser>=6.0.10
+
 # Configuration and utilities (built-in modules used by our package)
 # json, os, sys, logging, datetime - all built-in
 # tempfile, zipfile - built-in modules
@@ -14,6 +22,5 @@ structlog>=23.2.0
 # Note: Heavy dependencies moved to individual function packages:
 # - pandas/numpy moved to processor and report_generator
 # - openpyxl moved to report_generator only
-# - requests/feedparser moved to data_fetcher only
 # - scipy moved to processor only
 # - boto3/botocore available in Lambda runtime

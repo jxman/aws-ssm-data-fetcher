@@ -14,7 +14,7 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
   ]
 
   tags = merge(var.common_tags, {
-    Name = "GitHubActionsOIDCProvider"
+    Name    = "GitHubActionsOIDCProvider"
     Purpose = "GitHub Actions OIDC Authentication"
   })
 }
@@ -45,7 +45,7 @@ resource "aws_iam_role" "github_actions_role" {
   })
 
   tags = merge(var.common_tags, {
-    Name = "GithubActionsOIDC-${var.project_name}-Role"
+    Name    = "GithubActionsOIDC-${var.project_name}-Role"
     Purpose = "GitHub Actions deployment role"
   })
 }
@@ -332,7 +332,7 @@ resource "aws_iam_policy" "github_actions_policy" {
   })
 
   tags = merge(var.common_tags, {
-    Name = "GithubActions-${var.project_name}-Policy"
+    Name    = "GithubActions-${var.project_name}-Policy"
     Purpose = "GitHub Actions deployment policy"
   })
 }

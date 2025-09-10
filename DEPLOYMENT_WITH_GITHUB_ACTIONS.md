@@ -46,6 +46,7 @@ graph LR
 - [ ] GitHub repository created
 - [ ] AWS CLI configured locally
 - [ ] Terraform ≥ 1.5.0 installed
+- [ ] Pre-commit installed (`brew install pre-commit` or `pipx install pre-commit`)
 
 ## 🔧 Quick Setup (5 Minutes)
 
@@ -54,6 +55,9 @@ graph LR
 # Clone your repository
 git clone https://github.com/your-username/aws-ssm-data-fetcher.git
 cd aws-ssm-data-fetcher
+
+# Install pre-commit hooks (enforces code quality)
+pre-commit install
 
 # Create development branch
 git checkout -b develop
@@ -77,11 +81,11 @@ provider "aws" { region = "us-east-1" }
 
 module "github_oidc" {
   source = "../terraform/modules/github-oidc"
-  
+
   project_name      = "aws-ssm-fetcher"
   github_repository = "your-username/aws-ssm-data-fetcher"  # Update this
   tf_state_bucket   = "your-tf-state-bucket-unique-name"   # Update this
-  
+
   common_tags = {
     Project     = "aws-ssm-fetcher"
     Environment = "bootstrap"
@@ -108,7 +112,7 @@ TF_STATE_BUCKET=your-tf-state-bucket-unique-name
 ### 4. Environment Setup
 Create GitHub environments (Settings → Environments):
 - `dev` - No protection rules
-- `staging` - Require 1 reviewer, restrict to `develop` branch  
+- `staging` - Require 1 reviewer, restrict to `develop` branch
 - `prod` - Require 2 reviewers, restrict to `main` branch, 5-minute wait
 
 ## 🚦 Deployment Workflows
@@ -131,7 +135,7 @@ Create GitHub environments (Settings → Environments):
 4. Choose environment and action (plan/apply/destroy)
 
 #### Environment Promotion
-1. Go to **Actions** tab in GitHub  
+1. Go to **Actions** tab in GitHub
 2. Select **Environment Promotion** workflow
 3. Click **Run workflow**
 4. Choose source → target promotion path
@@ -148,7 +152,7 @@ Notifications: Disabled
 Destroy Protection: Disabled
 ```
 
-### Staging (staging)  
+### Staging (staging)
 ```yaml
 Environment: staging
 Auto-deploy: ❌ (manual promotion from dev)
@@ -162,7 +166,7 @@ Destroy Protection: Enabled
 ```yaml
 Environment: prod
 Auto-deploy: ✅ (on push to main)
-Monitoring: 30-day retention  
+Monitoring: 30-day retention
 Scheduling: Daily at 6 AM UTC
 Notifications: Enabled
 Destroy Protection: Enabled
@@ -276,8 +280,13 @@ aws stepfunctions list-executions \
 
 ### Compliance Checks
 - **Security Scanning**: TFSec analysis on every deployment
-- **Secret Detection**: TruffleHog scans for exposed credentials
-- **Code Quality**: Black, isort, flake8, mypy validation
+- **Secret Detection**: detect-secrets baseline scanning for exposed credentials
+- **Code Quality**: Pre-commit hooks enforce consistent formatting and linting
+  - Black for Python code formatting
+  - isort for import sorting
+  - flake8 for Python linting
+  - mypy for static type checking
+  - bandit for security vulnerability scanning
 - **Infrastructure Validation**: Terraform validate and fmt checks
 
 ### Security Monitoring
@@ -366,7 +375,7 @@ aws iam simulate-principal-policy \
 
 1. **GitHub Actions Logs**: Check workflow run details in Actions tab
 2. **AWS CloudWatch**: Review Lambda and Step Functions logs
-3. **CloudTrail**: Investigate permission and API call issues  
+3. **CloudTrail**: Investigate permission and API call issues
 4. **Terraform State**: Verify state file consistency
 5. **Community**: AWS and Terraform community forums
 
@@ -404,7 +413,7 @@ aws budgets create-budget --account-id <account-id> \
 - ✅ Monitor post-deployment metrics
 - ✅ Keep documentation updated
 
-### Security Best Practices  
+### Security Best Practices
 - ✅ Rotate OIDC thumbprints when GitHub updates them
 - ✅ Review IAM permissions quarterly
 - ✅ Enable AWS Config for compliance monitoring

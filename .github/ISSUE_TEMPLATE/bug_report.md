@@ -33,6 +33,6 @@ If applicable, add screenshots or paste relevant log output to help explain your
 Add any other context about the problem here.
 
 **Infrastructure Details**
-- Step Function ARN: 
-- S3 Bucket: 
-- CloudWatch Log Group: 
+- Step Function ARN:
+- S3 Bucket:
+- CloudWatch Log Group:

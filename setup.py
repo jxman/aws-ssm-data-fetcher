@@ -1,13 +1,15 @@
 """Setup configuration for AWS SSM Data Fetcher package."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # Read the README file for the long description
 try:
     with open("README.md", "r", encoding="utf-8") as fh:
         long_description = fh.read()
 except FileNotFoundError:
-    long_description = "AWS SSM Data Fetcher - Modular package for AWS service availability reporting"
+    long_description = (
+        "AWS SSM Data Fetcher - Modular package for AWS service availability reporting"
+    )
 
 setup(
     name="aws-ssm-fetcher",

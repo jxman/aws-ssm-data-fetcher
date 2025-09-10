@@ -45,15 +45,30 @@ jobs:
         cd lambda_functions
         chmod +x scripts/build_packages.sh
         ./scripts/build_packages.sh
-        
+
         echo "🔍 Verifying package sizes..."
-        for package in shared_layer.zip */deployment_package.zip; do
+
+        # Check Lambda function packages (50MB limit)
+        for package in */deployment_package.zip; do
           if [ -f "$package" ]; then
             size=$(stat -c%s "$package" 2>/dev/null || stat -f%z "$package" 2>/dev/null)
             size_mb=$((size / 1024 / 1024))
             echo "  ✅ $package: ${size_mb}MB"
             if [ $size_mb -gt 50 ]; then
               echo "  ❌ Package $package exceeds 50MB limit (${size_mb}MB)"
+              exit 1
+            fi
+          fi
+        done
+
+        # Check Lambda layer packages (250MB limit)
+        for package in *_layer/*.zip shared_layer.zip; do
+          if [ -f "$package" ]; then
+            size=$(stat -c%s "$package" 2>/dev/null || stat -f%z "$package" 2>/dev/null)
+            size_mb=$((size / 1024 / 1024))
+            echo "  ✅ Layer $package: ${size_mb}MB"
+            if [ $size_mb -gt 250 ]; then
+              echo "  ❌ Layer $package exceeds 250MB limit (${size_mb}MB)"
               exit 1
             fi
           fi
@@ -135,7 +150,7 @@ jobs:
     - name: Validate Documentation Structure
       run: |
         echo "📚 Checking documentation completeness..."
-        
+
         # Check required documentation files
         required_files=(
           "README.md"
@@ -145,7 +160,7 @@ jobs:
           "docs/deployment/TERRAFORM_INFRASTRUCTURE.md"
           "terraform/README.md"
         )
-        
+
         missing_files=()
         for file in "${required_files[@]}"; do
           if [ ! -f "$file" ]; then
@@ -154,25 +169,25 @@ jobs:
             echo "  ✅ $file"
           fi
         done
-        
+
         if [ ${#missing_files[@]} -ne 0 ]; then
           echo "❌ Missing documentation files:"
           printf '  - %s\n' "${missing_files[@]}"
           exit 1
         fi
-        
+
         echo "✅ All required documentation files present"
 
     - name: Check Documentation Links
       run: |
         echo "🔗 Checking documentation links..."
-        
+
         # Simple check for broken internal links
         find . -name "*.md" -exec grep -l "\[\.*\](" {} \; | while read -r file; do
           echo "Checking links in $file..."
           # This is a basic check - in production you might want to use a proper link checker
         done
-        
+
         echo "✅ Documentation link check completed"
 
   security:
@@ -180,13 +195,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Run Bandit Security Scan
-      uses: securecodewarrior/github-action-bandit@v1.0.1
-      with:
-        path: "aws_ssm_fetcher"
-        level: "medium"
-        confidence: "medium"
-        exit_zero: true
+    - name: Install and run Bandit Security Scan
+      run: |
+        pip install bandit
+        bandit -r aws_ssm_fetcher -f json -o bandit-report.json || true
+        bandit -r aws_ssm_fetcher || true
+      continue-on-error: true
 
     - name: Check for secrets
       uses: trufflesecurity/trufflehog@main

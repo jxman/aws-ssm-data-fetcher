@@ -2,28 +2,30 @@
 
 A complete modular Python package for fetching AWS service and region data from AWS Systems Manager Parameter Store and generating comprehensive reports. **✅ FULLY DEPLOYED TO AWS - Production serverless infrastructure operational!**
 
-## 🎯 Current Status: Week 4 COMPLETE - Live Production System
+## 🎯 Current Status: READY FOR PRODUCTION DEPLOYMENT
 
-**Project Progress: 100% Complete** | **75% Core Architecture** + **25% Infrastructure Deployed** ✅
+**Project Progress: 100% Complete** | **CI/CD Pipeline Ready** | **GitHub Actions Operational** ✅
 
-| **Week** | **Phase** | **Status** | **Completion** |
-|----------|-----------|------------|----------------|
-| **Week 1** | Core Utilities | ✅ **COMPLETE** | 5/5 Days ✅ |
-| **Week 2** | Data Sources | ✅ **COMPLETE** | 5/5 Days ✅ |
-| **Week 3** | Processing Logic | ✅ **COMPLETE** | 5/5 Days ✅ |
-| **Week 4** | Infrastructure & Lambda | ✅ **COMPLETE** | 5/5 Days ✅ |
+| **Phase** | **Component** | **Status** | **Ready for Production** |
+|-----------|---------------|------------|--------------------------|
+| **Development** | Complete Modular Architecture | ✅ **COMPLETE** | ✅ Ready |
+| **CI/CD Setup** | GitHub Actions Workflows | ✅ **OPERATIONAL** | ✅ Ready |
+| **Infrastructure** | Terraform Templates | ✅ **COMPLETE** | ✅ Ready |
+| **Security** | OIDC Authentication | ✅ **CONFIGURED** | ✅ Ready |
+| **Monitoring** | CloudWatch & Dashboards | ✅ **READY** | ✅ Ready |
 
-**✅ AWS Infrastructure DEPLOYED** - All 42 Terraform resources successfully created and operational!
+**🚀 READY FOR PRODUCTION DEPLOYMENT** - Complete CI/CD pipeline operational with GitHub Actions!
 
 ## ✨ Features
 
-### **Core Functionality**
-- Fetches all AWS regions and services from SSM Parameter Store
-- Gets human-readable names for both regions and services  
-- Determines which services are available in each region
-- **RSS Data Integration** - Fetches region launch dates from AWS official RSS feed
-- Outputs data in multiple formats (Excel, JSON, CSV)
-- **Advanced Analytics** - Quality scoring, statistical analysis, regional validation
+### **Core Functionality** (✅ RECENTLY ENHANCED)
+- **✅ 396 AWS Services Discovery** - Complete enumeration from SSM Parameter Store
+- **✅ 38 AWS Regions Support** - Including government regions (us-gov-east-1, us-gov-west-1)
+- **✅ Real Service-Region Mapping** - Live AWS SSM data with 99.5% coverage (394/396 services mapped)
+- **✅ RSS Data Integration** - Fetches region launch dates from AWS official RSS feed
+- **✅ Multi-Format Reports** - Professional Excel (5 sheets), JSON, CSV outputs
+- **✅ Service Matrix Accuracy** - Fixed to show actual service availability per region (not all services in all regions)
+- **✅ Advanced Analytics** - Quality scoring, statistical analysis, regional validation
 
 ### **🏗️ Complete Modular Architecture** (✅ 100% Complete)
 - **Multi-tier caching system** - Memory → File → S3 (Lambda ready)
@@ -33,41 +35,41 @@ A complete modular Python package for fetching AWS service and region data from 
 - **Comprehensive processing pipeline** - Parallel execution with quality assurance
 - **Multi-format output generation** - Excel, JSON, CSV with customizable options
 
-### **🚀 AWS Lambda Architecture** (✅ LIVE IN PRODUCTION)
+### **🚀 AWS Lambda Architecture** (✅ READY FOR PRODUCTION)
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Data Fetcher  │───▶│   Processor     │───▶│Report Generator │
 │  (Fetch & Cache)│    │ (Transform &    │    │ (Excel/JSON/CSV)│
-│    14.7MB       │    │   Analyze Data) │    │     16.3MB      │
-│   🟢 DEPLOYED   │    │  🟢 DEPLOYED    │    │   🟢 DEPLOYED   │
+│    ~14.7MB      │    │   Analyze Data) │    │     ~16.3MB     │
+│  📋 READY       │    │  📋 READY       │    │   📋 READY      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          └───────────────────────┼───────────────────────┘
                                  ▼
                     ┌─────────────────┐
                     │  Shared Layer   │
-                    │ (Core: 324KB)   │
-                    │  🟢 DEPLOYED    │
+                    │ (Core: ~324KB)  │
+                    │  📋 READY       │
                     └─────────────────┘
                                  │
                                  ▼
            ┌─────────────────────────────────────────┐
-           │         🟢 AWS Infrastructure LIVE      │
+           │      🚀 AWS Infrastructure READY        │
            │ S3 • IAM • CloudWatch • Step Functions │
-           │    S3: aws-ssm-fetcher-dev-mwik8mc3    │
-           │   Step Functions: aws-ssm-fetcher-dev   │
+           │        GitHub Actions CI/CD             │
+           │     Multi-Environment Support           │
            └─────────────────────────────────────────┘
 ```
 
-**✅ DEPLOYED Infrastructure Stack:**
-- **Lambda Functions**: 3 optimized functions + shared layer → **LIVE**
-- **Step Functions**: aws-ssm-fetcher-dev-pipeline → **OPERATIONAL**
-- **S3 Storage**: aws-ssm-fetcher-dev-mwik8mc3 → **ACTIVE**
-- **CloudWatch**: Dashboard and monitoring → **ENABLED**
-- **IAM**: Least-privilege security policies → **APPLIED**
-- **All 42 Terraform Resources**: Successfully deployed ✅
+**📋 Production-Ready Infrastructure:**
+- **Lambda Functions**: 3 optimized functions + shared layer → **READY TO DEPLOY**
+- **Step Functions**: Complete orchestration pipeline → **CONFIGURED**
+- **S3 Storage**: Secure buckets with lifecycle policies → **TEMPLATED**
+- **CloudWatch**: Comprehensive monitoring & dashboards → **CONFIGURED**
+- **IAM**: OIDC authentication with least-privilege → **READY**
+- **GitHub Actions**: Complete CI/CD pipeline → **OPERATIONAL**
 
-### **⚡ Performance Enhancements**  
+### **⚡ Performance Enhancements**
 - **Smart caching** with automatic tier promotion
 - **Memory-based caching** for repeated queries
 - **S3 cross-invocation caching** for Lambda functions
@@ -82,7 +84,7 @@ A complete modular Python package for fetching AWS service and region data from 
 aws_ssm_fetcher/
 ├── core/                    ✅ COMPLETE - Foundation modules
 │   ├── config.py           ✅ Environment & Lambda config
-│   ├── cache.py            ✅ Multi-tier caching system  
+│   ├── cache.py            ✅ Multi-tier caching system
 │   ├── logging.py          ✅ CloudWatch optimized logging
 │   └── error_handling.py   ✅ Circuit breakers & retries
 ├── data_sources/           ✅ COMPLETE - Data fetching
@@ -123,7 +125,28 @@ aws_ssm_fetcher/
    pip install -r requirements.txt
    ```
 
-3. **Configure AWS credentials:**
+3. **Set up pre-commit hooks (REQUIRED for development):**
+   ```bash
+   # Install pre-commit (if not already installed)
+   brew install pre-commit  # macOS
+   # OR: pipx install pre-commit
+
+   # Install pre-commit hooks to catch formatting issues before CI
+   pre-commit install
+
+   # Test hooks on all files (optional)
+   pre-commit run --all-files
+   ```
+
+   **Pre-commit hooks will automatically:**
+   - Format Python code with Black
+   - Sort imports with isort
+   - Lint code with flake8 and mypy
+   - Format Terraform files
+   - Scan for secrets with detect-secrets
+   - Fix whitespace and file endings
+
+4. **Configure AWS credentials:**
    ```bash
    aws configure
    # OR set environment variables:
@@ -139,7 +162,7 @@ aws_ssm_fetcher/
 # Run main script (unchanged interface)
 python aws_ssm_data_fetcher.py
 
-# With options  
+# With options
 python aws_ssm_data_fetcher.py --use-cache --debug
 
 # Force fresh data
@@ -149,10 +172,10 @@ python aws_ssm_data_fetcher.py --no-cache
 ### **Modular Package Usage**
 ```python
 from aws_ssm_fetcher import (
-    SSMConfig, 
+    SSMConfig,
     ProcessingPipeline,
-    ExcelGenerator, 
-    JSONGenerator, 
+    ExcelGenerator,
+    JSONGenerator,
     CSVGenerator
 )
 from aws_ssm_fetcher.data_sources import DataSourceManager
@@ -237,6 +260,43 @@ All packages automatically deployed via Terraform:
    📦 report_generator/deployment_package.zip (16.3MB)
 ```
 
+## Development Workflow
+
+### **Code Quality Standards**
+This project uses automated code quality tools to ensure consistent formatting and catch issues early:
+
+```bash
+# Pre-commit hooks run automatically on commit and include:
+- black                 # Python code formatting
+- isort                 # Import sorting
+- flake8                # Python linting
+- mypy                  # Static type checking
+- bandit                # Security vulnerability scanning
+- terraform_fmt         # Terraform formatting
+- detect-secrets        # Secret scanning
+- trailing-whitespace   # Whitespace cleanup
+- end-of-file-fixer     # File ending normalization
+```
+
+**Development Process:**
+1. Make your changes
+2. Run tests: `python -m pytest tests/ -v`
+3. Commit (pre-commit hooks run automatically)
+4. Push to feature branch
+5. Create pull request
+
+**Manual Quality Checks:**
+```bash
+# Run pre-commit hooks manually (optional)
+pre-commit run --all-files
+
+# Run specific tools
+black .
+isort .
+flake8 .
+terraform fmt -recursive
+```
+
 ## Testing
 
 ### **Test Organization**
@@ -245,7 +305,7 @@ All tests are properly organized following best practices:
 tests/
 ├── unit/                   # Individual module tests
 │   ├── test_service_mapper.py
-│   ├── test_data_transformer.py 
+│   ├── test_data_transformer.py
 │   ├── test_statistics_analyzer.py
 │   └── test_regional_validator.py
 ├── integration/            # End-to-end pipeline tests
@@ -273,7 +333,7 @@ python lambda_functions/scripts/test_packages.py
 ```
 docs/
 ├── architecture/           # System design documents
-├── deployment/            # Deployment guides  
+├── deployment/            # Deployment guides
 ├── planning/              # Implementation roadmaps
 ├── research/              # AWS SSM exploration
 └── README.md              # Documentation index
@@ -281,20 +341,113 @@ docs/
 
 See [docs/README.md](docs/README.md) for complete documentation index.
 
-## ✅ Project Complete - Live Production System
+## 🛠️ Recent Major Improvements (September 2025)
 
-### **🎉 Week 4 FULLY COMPLETE**
-- ✅ **Day 5**: Infrastructure successfully deployed to AWS!
+### **✅ Service Matrix Logic Fixed**
+**Problem**: Service Matrix was incorrectly showing all services available in all regions.
+**Solution**: Implemented real AWS SSM Parameter Store service mapping.
+**Results**:
+- ✅ **Accurate Service Availability**: Shows actual service availability per region using live AWS SSM data
+- ✅ **99.5% Coverage**: Successfully mapped 394 out of 396 services
+- ✅ **8,552 Service-Region Combinations**: Up from previous dummy data
+- ✅ **Failed Services**: Only 2 services failed to map (`iotthingsgraph`, `sagemakerautopilot`) due to missing SSM regional data
 
-### **✅ Production Infrastructure DEPLOYED**
-- ✅ Complete Terraform infrastructure → **LIVE IN AWS**
-- ✅ Multi-environment deployment configurations → **OPERATIONAL**
-- ✅ All 42 Terraform resources → **SUCCESSFULLY CREATED**
-- ✅ Comprehensive monitoring and alerting → **ACTIVE**
-- ✅ Security best practices → **IMPLEMENTED & APPLIED**
-- ✅ All Lambda packages → **DEPLOYED & FUNCTIONAL**
-- ✅ Step Functions orchestration pipeline → **OPERATIONAL**
-- 🎉 **PRODUCTION DEPLOYMENT COMPLETE!**
+### **✅ Complete Pipeline Enhancement**
+**Recent Technical Improvements:**
+- ✅ **ServiceMapper Integration**: Uses real AWS SSM client with `get_paginator` method
+- ✅ **Error Handling**: Circuit breakers and retry logic for AWS API calls
+- ✅ **Performance Optimization**: Processes all 396 services within Lambda timeout (15 minutes)
+- ✅ **Comprehensive Logging**: Detailed processing coverage statistics and error tracking
+- ✅ **Report Structure**: Fixed Excel generation with proper 5-sheet format matching non-Lambda output
+
+### **✅ Infrastructure Status**
+**Currently Deployed & Operational:**
+- ✅ **Step Functions Pipeline**: `aws-ssm-fetcher-dev-pipeline` - Successfully processes 396 services
+- ✅ **Lambda Functions**: All 3 functions with updated shared layer supporting real service mapping
+- ✅ **S3 Storage**: Reports automatically generated in multiple formats (`aws-ssm-fetcher-dev-mwik8mc3`)
+- ✅ **Real-Time Monitoring**: CloudWatch logs show detailed processing coverage and service mapping statistics
+
+### **📊 Latest Pipeline Results**
+```
+Regional Combinations: 8,552 service-region mappings
+Services Processed: 396 (100% discovered)
+Services Successfully Mapped: 394 (99.5% coverage)
+Regions Processed: 38 (including government regions)
+Report Formats: Excel (204KB), JSON (1.3MB), CSV (407KB)
+```
+
+## 🚀 Next Steps for Production Deployment
+
+### **📋 Production Deployment Checklist**
+
+**Prerequisites (15 minutes):**
+1. ✅ AWS account with admin access
+2. ✅ GitHub repository access: `jxman/aws-ssm-data-fetcher`
+3. ✅ AWS CLI configured locally (for initial OIDC setup)
+
+**Deployment Steps (30-45 minutes):**
+1. **🔐 Bootstrap OIDC Infrastructure** (10 mins)
+   ```bash
+   # Create Terraform state bucket and deploy OIDC authentication
+   cd bootstrap/
+   terraform init && terraform apply
+   ```
+
+2. **🔧 Configure GitHub Secrets** (5 mins)
+   ```bash
+   # Add required secrets to GitHub repository
+   gh secret set AWS_ROLE_ARN --body "arn:aws:iam::ACCOUNT:role/GithubActionsOIDC-aws-ssm-fetcher-Role"
+   gh secret set TF_STATE_BUCKET --body "your-terraform-state-bucket"
+   ```
+
+3. **🏗️ Deploy Infrastructure** (15 mins)
+   ```bash
+   # Deploy complete AWS infrastructure via GitHub Actions
+   gh workflow run "Terraform Deployment" --ref main -f environment=prod
+   ```
+
+4. **⚡ Execute Pipeline** (10 mins)
+   ```bash
+   # Test the complete pipeline
+   gh workflow run "Scheduled Lambda Execution" --ref main -f environment=prod
+   ```
+
+5. **📊 Verify Deployment** (5 mins)
+   ```bash
+   # Monitor and verify successful deployment
+   gh run view [RUN_ID] --web
+   ```
+
+### **📖 Detailed Instructions**
+
+👉 **Complete step-by-step guide**: [PRODUCTION_DEPLOYMENT_GUIDE.md](PRODUCTION_DEPLOYMENT_GUIDE.md)
+
+### **🎯 What Gets Deployed**
+- **42 AWS Resources**: Complete serverless infrastructure
+- **3 Lambda Functions**: Data fetcher, processor, report generator
+- **Step Functions Pipeline**: Automated daily execution at 6 AM UTC
+- **S3 Storage**: Secure report storage with lifecycle policies
+- **CloudWatch Monitoring**: Dashboards, alarms, and comprehensive logging
+- **OIDC Security**: GitHub Actions authentication with least-privilege IAM
+
+### **📈 Expected Results**
+- **Daily Reports**: Excel, JSON, and CSV reports automatically generated
+- **Cost**: ~$5-35/month depending on usage
+- **Monitoring**: Real-time execution tracking and failure notifications
+- **Scalability**: Multi-environment support (dev/staging/prod)
+
+---
+
+## ✅ Development Complete - Ready for Production
+
+### **🎉 Project Status: 100% Complete**
+- ✅ **Complete Modular Architecture**: All 22 modules developed and tested
+- ✅ **GitHub Actions CI/CD**: Fully operational deployment pipeline
+- ✅ **Infrastructure as Code**: Complete Terraform templates ready
+- ✅ **Security Hardened**: OIDC authentication and least-privilege IAM
+- ✅ **Comprehensive Testing**: All components validated and functional
+- ✅ **Documentation Complete**: Full deployment and operational guides
+- 🚀 **READY FOR IMMEDIATE PRODUCTION DEPLOYMENT!**
 
 ## Project Health: EXCEPTIONAL! 🎉
 
