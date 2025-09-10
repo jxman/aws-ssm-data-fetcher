@@ -138,6 +138,13 @@ resource "aws_iam_role_policy" "step_functions_execution_policy" {
           "logs:DescribeLogGroups"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sns:Publish"
+        ]
+        Resource = "arn:aws:sns:*:*:${var.project_name}-${var.environment}-notifications"
       }
     ]
   })
