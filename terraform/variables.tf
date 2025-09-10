@@ -5,20 +5,20 @@ variable "aws_region" {
 }
 
 variable "environment" {
-  description = "Environment name (dev, staging, prod)"
+  description = "Environment name (fixed to prod)"
   type        = string
-  default     = "dev"
+  default     = "prod"
 
   validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "Environment must be one of: dev, staging, prod."
+    condition     = var.environment == "prod"
+    error_message = "This deployment only supports production environment."
   }
 }
 
 variable "log_level" {
-  description = "Log level for Lambda functions"
+  description = "Log level for Lambda functions (production default)"
   type        = string
-  default     = "INFO"
+  default     = "WARNING"
 
   validation {
     condition     = contains(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], var.log_level)
@@ -33,9 +33,9 @@ variable "enable_monitoring" {
 }
 
 variable "retention_days" {
-  description = "CloudWatch logs retention in days"
+  description = "CloudWatch logs retention in days (production default)"
   type        = number
-  default     = 14
+  default     = 30
 
   validation {
     condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.retention_days)
@@ -44,9 +44,9 @@ variable "retention_days" {
 }
 
 variable "sns_email" {
-  description = "Email address for SNS notifications (optional)"
+  description = "Email address for SNS notifications (required for production)"
   type        = string
-  default     = ""
+  default     = "production-alerts@example.com"
 }
 
 variable "eventbridge_schedule_expression" {
@@ -68,7 +68,7 @@ variable "s3_force_destroy" {
 }
 
 variable "enable_sns_notifications" {
-  description = "Enable SNS notifications for alarms"
+  description = "Enable SNS notifications for alarms (production default)"
   type        = bool
-  default     = false
+  default     = true
 }

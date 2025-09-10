@@ -17,15 +17,6 @@ on:
       - 'lambda_functions/**'
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Environment to deploy'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-        - dev
-        - staging
-        - prod
       action:
         description: 'Terraform action'
         required: true
@@ -49,7 +40,7 @@ jobs:
   terraform:
     name: "Terraform ${{ github.event.inputs.action || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'apply') || 'plan' }}"
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod') || (github.ref == 'refs/heads/develop' && 'staging') || 'dev' }}
+    environment: prod
 
     defaults:
       run:
@@ -108,18 +99,10 @@ jobs:
         terraform_version: ${{ env.TF_VERSION }}
         terraform_wrapper: false
 
-    - name: Determine Environment
+    - name: Set Environment
       id: env
       run: |
-        if [ "${{ github.event.inputs.environment }}" != "" ]; then
-          echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
-        elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
-          echo "environment=prod" >> $GITHUB_OUTPUT
-        elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-          echo "environment=staging" >> $GITHUB_OUTPUT
-        else
-          echo "environment=dev" >> $GITHUB_OUTPUT
-        fi
+        echo "environment=prod" >> $GITHUB_OUTPUT
 
     - name: Determine Action
       id: action
@@ -141,7 +124,7 @@ jobs:
       run: |
         terraform init \
           -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
-          -backend-config="key=aws-ssm-fetcher/${{ steps.env.outputs.environment }}/terraform.tfstate" \
+          -backend-config="key=aws-ssm-fetcher/prod/terraform.tfstate" \
           -backend-config="region=${{ env.AWS_REGION }}" \
           -backend-config="encrypt=true"
 
@@ -159,8 +142,7 @@ jobs:
       id: plan
       run: |
         terraform plan \
-          -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
-          -out=tfplan-${{ steps.env.outputs.environment }} \
+          -out=tfplan-prod \
           -detailed-exitcode
         echo "plan_exitcode=$?" >> $GITHUB_OUTPUT
       continue-on-error: true
@@ -210,7 +192,7 @@ jobs:
       run: |
         terraform apply \
           -auto-approve \
-          tfplan-${{ steps.env.outputs.environment }}
+          tfplan-prod
 
         echo "🚀 Infrastructure deployed successfully!"
         echo "📊 Terraform Outputs:"
@@ -220,7 +202,6 @@ jobs:
       if: steps.action.outputs.action == 'destroy' && github.event_name == 'workflow_dispatch'
       run: |
         terraform destroy \
-          -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
           -auto-approve
         echo "🗑️ Infrastructure destroyed successfully!"
 
@@ -266,7 +247,7 @@ jobs:
       run: |
         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- **Environment**: ${{ steps.env.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
         echo "- **AWS Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Terraform Version**: ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
