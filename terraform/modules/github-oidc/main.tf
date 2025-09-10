@@ -71,6 +71,14 @@ resource "aws_iam_policy" "github_actions_policy" {
           "arn:aws:s3:::${var.tf_state_bucket}/*"
         ]
       },
+      # S3 global permissions needed for import operations
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListAllMyBuckets"
+        ]
+        Resource = "*"
+      },
       # DynamoDB permissions for Terraform state locking
       {
         Effect = "Allow"
