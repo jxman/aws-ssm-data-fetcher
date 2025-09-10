@@ -2,7 +2,7 @@ name: 'Test and Validate'
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -202,10 +202,20 @@ jobs:
         bandit -r aws_ssm_fetcher || true
       continue-on-error: true
 
-    - name: Check for secrets
+    - name: Check for secrets with TruffleHog
+      # Skip if this is the first commit or if base and head are the same
+      if: github.event_name == 'pull_request' || (github.event.before != null && github.event.before != '0000000000000000000000000000000000000000')
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
-        base: main
-        head: HEAD
+        base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        head: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        extra_args: --debug --only-verified
+
+    - name: Filesystem scan for secrets (fallback)
+      # Run filesystem scan when git history scan is not possible
+      if: github.event_name != 'pull_request' && (github.event.before == null || github.event.before == '0000000000000000000000000000000000000000')
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
         extra_args: --debug --only-verified

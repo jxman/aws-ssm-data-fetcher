@@ -1,6 +1,13 @@
 #!/bin/bash
 
-# AWS SSM Data Fetcher - Terraform Deployment Script
+# AWS SSM Data Fetcher - Local Terraform Deployment Script
+#
+# ⚠️  WARNING: This is a local deployment script for development/testing only.
+# ⚠️  PRODUCTION deployments must use GitHub Actions workflow.
+#
+# This project has been simplified to PROD-only deployment through GitHub Actions.
+# This script is maintained for local development and testing purposes only.
+
 set -e
 
 # Colors for output
@@ -10,39 +17,40 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Default values
-ENVIRONMENT="dev"
+# Default values (PROD-only deployment)
+ENVIRONMENT="prod"
 ACTION="plan"
 AUTO_APPROVE=false
 BUILD_PACKAGES=true
 
 # Function to display usage
 usage() {
+    echo -e "${YELLOW}⚠️  IMPORTANT: This is a local development script only!${NC}"
+    echo -e "${YELLOW}   For production deployments, use: gh workflow run \"Terraform Deployment\"${NC}"
+    echo ""
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "Deploy AWS SSM Data Fetcher infrastructure using Terraform"
+    echo "Local Terraform deployment script (PROD-only configuration)"
     echo ""
     echo "Options:"
-    echo "  -e, --environment ENV    Environment to deploy (dev, staging, prod) [default: dev]"
     echo "  -a, --action ACTION      Terraform action (plan, apply, destroy) [default: plan]"
     echo "  -y, --auto-approve      Auto-approve Terraform apply/destroy"
     echo "  -s, --skip-build        Skip Lambda package build"
     echo "  -h, --help              Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                                    # Plan dev environment"
-    echo "  $0 -e staging -a apply               # Deploy to staging"
-    echo "  $0 -e prod -a apply -y               # Deploy to prod with auto-approve"
-    echo "  $0 -e dev -a destroy                 # Destroy dev environment"
+    echo "  $0                       # Plan prod environment locally"
+    echo "  $0 -a apply              # Deploy prod locally (NOT RECOMMENDED)"
+    echo "  $0 -a destroy            # Destroy prod environment locally"
+    echo ""
+    echo "Recommended production workflow:"
+    echo "  gh workflow run \"Terraform Deployment\" --ref main -f action=plan"
+    echo "  gh workflow run \"Terraform Deployment\" --ref main -f action=apply"
 }
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -e|--environment)
-            ENVIRONMENT="$2"
-            shift 2
-            ;;
         -a|--action)
             ACTION="$2"
             shift 2
