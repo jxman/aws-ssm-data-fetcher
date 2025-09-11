@@ -218,30 +218,42 @@ jobs:
         echo "Step Function ARN: $STEP_FUNCTION_ARN"
         echo "S3 Bucket: $S3_BUCKET"
 
-        # Test Step Function execution
-        EXECUTION_ARN=$(aws stepfunctions start-execution \
-          --state-machine-arn "$STEP_FUNCTION_ARN" \
-          --input '{"test": true, "source": "github-actions"}' \
-          --query 'executionArn' --output text)
+        # Test core infrastructure
+        echo "📊 Testing S3 bucket access..."
+        aws s3 ls s3://$S3_BUCKET > /dev/null
+        echo "✅ S3 bucket accessible"
 
-        echo "Started test execution: $EXECUTION_ARN"
+        # Test Step Function execution only if Step Functions are deployed
+        if [ -n "$STEP_FUNCTION_ARN" ] && [ "$STEP_FUNCTION_ARN" != "" ]; then
+          echo "🔄 Testing Step Function execution..."
+          EXECUTION_ARN=$(aws stepfunctions start-execution \
+            --state-machine-arn "$STEP_FUNCTION_ARN" \
+            --input '{"test": true, "source": "github-actions"}' \
+            --query 'executionArn' --output text)
 
-        # Wait a bit and check status
-        sleep 30
-        STATUS=$(aws stepfunctions describe-execution \
-          --execution-arn "$EXECUTION_ARN" \
-          --query 'status' --output text)
+          echo "Started test execution: $EXECUTION_ARN"
 
-        echo "Execution status: $STATUS"
+          # Wait a bit and check status
+          sleep 30
+          STATUS=$(aws stepfunctions describe-execution \
+            --execution-arn "$EXECUTION_ARN" \
+            --query 'status' --output text)
 
-        if [ "$STATUS" = "SUCCEEDED" ]; then
-          echo "✅ Infrastructure test passed!"
-        elif [ "$STATUS" = "RUNNING" ]; then
-          echo "⏳ Execution still running - infrastructure appears healthy"
+          echo "Execution status: $STATUS"
+
+          if [ "$STATUS" = "SUCCEEDED" ]; then
+            echo "✅ Step Function test passed!"
+          elif [ "$STATUS" = "RUNNING" ]; then
+            echo "⏳ Step Function execution still running - appears healthy"
+          else
+            echo "❌ Step Function test failed with status: $STATUS"
+            exit 1
+          fi
         else
-          echo "❌ Infrastructure test failed with status: $STATUS"
-          exit 1
+          echo "ℹ️  Step Functions are disabled - skipping Step Function tests"
         fi
+
+        echo "✅ Infrastructure test completed successfully!"
 
     - name: Deployment Summary
       if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
