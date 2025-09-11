@@ -15,12 +15,12 @@ output "eventbridge_rule_id" {
 
 output "eventbridge_iam_role_arn" {
   description = "ARN of the IAM role used by EventBridge"
-  value       = aws_iam_role.eventbridge_step_functions.arn
+  value       = var.step_function_arn != "" ? aws_iam_role.eventbridge_step_functions[0].arn : null
 }
 
 output "eventbridge_iam_role_name" {
   description = "Name of the IAM role used by EventBridge"
-  value       = aws_iam_role.eventbridge_step_functions.name
+  value       = var.step_function_arn != "" ? aws_iam_role.eventbridge_step_functions[0].name : null
 }
 
 output "schedule_expression" {
