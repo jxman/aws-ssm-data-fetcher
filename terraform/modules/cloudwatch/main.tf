@@ -3,7 +3,7 @@ resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "${var.project_name}-${var.environment}-dashboard"
 
   dashboard_body = jsonencode({
-    widgets = [
+    widgets = concat([
       {
         type   = "metric"
         x      = 0
@@ -84,7 +84,8 @@ resource "aws_cloudwatch_dashboard" "main" {
             }
           }
         }
-      },
+      }
+      ], var.step_function_arn != "" ? [
       {
         type   = "metric"
         x      = 12
@@ -124,7 +125,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           }
         }
       }
-    ]
+    ] : [])
   })
 
 }
@@ -178,6 +179,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_duration" {
 
 # CloudWatch Alarm for Step Functions
 resource "aws_cloudwatch_metric_alarm" "step_function_failures" {
+  count               = var.step_function_arn != "" ? 1 : 0
   alarm_name          = "${var.project_name}-${var.environment}-step-function-failures"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = "1"

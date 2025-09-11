@@ -13,10 +13,11 @@ resource "aws_cloudwatch_event_rule" "daily_execution" {
 
 # EventBridge target for Step Functions
 resource "aws_cloudwatch_event_target" "step_function" {
+  count     = var.step_function_arn != "" ? 1 : 0
   rule      = aws_cloudwatch_event_rule.daily_execution.name
   target_id = "StepFunctionTarget"
   arn       = var.step_function_arn
-  role_arn  = aws_iam_role.eventbridge_step_functions.arn
+  role_arn  = aws_iam_role.eventbridge_step_functions[0].arn
 
   # Input with proper JSON structure for Step Functions
   input = jsonencode({
@@ -29,7 +30,8 @@ resource "aws_cloudwatch_event_target" "step_function" {
 
 # IAM role for EventBridge to invoke Step Functions
 resource "aws_iam_role" "eventbridge_step_functions" {
-  name = "${var.project_name}-${var.environment}-eventbridge-role"
+  count = var.step_function_arn != "" ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-eventbridge-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -52,8 +54,9 @@ resource "aws_iam_role" "eventbridge_step_functions" {
 
 # IAM policy for EventBridge to invoke Step Functions
 resource "aws_iam_role_policy" "eventbridge_step_functions" {
-  name = "${var.project_name}-${var.environment}-eventbridge-policy"
-  role = aws_iam_role.eventbridge_step_functions.id
+  count = var.step_function_arn != "" ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-eventbridge-policy"
+  role  = aws_iam_role.eventbridge_step_functions[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
