@@ -132,11 +132,12 @@ jobs:
       id: validate
       run: terraform validate
 
-    - name: Terraform Security Scan
-      uses: aquasecurity/tfsec-action@v1.0.3
-      with:
-        working_directory: terraform
-        soft_fail: true
+    # - name: Terraform Security Scan
+    #   uses: aquasecurity/tfsec-action@v1.0.3
+    #   with:
+    #     working_directory: terraform
+    #     soft_fail: true
+    # Temporarily disabled due to GitHub API rate limiting issues
 
     - name: Terraform Plan
       id: plan
