@@ -186,6 +186,9 @@ lambda_functions/shared_layer/python/six*
 lambda_functions/shared_layer/python/tzdata*/
 lambda_functions/shared_layer/python/urllib3*/
 
+# Lambda layer copied source code (auto-generated during build)
+lambda_functions/shared_layer/python/aws_ssm_fetcher/
+
 # Architecture diagrams with sensitive data (if any)
 *-architecture-diagram-with-icons.svg
 *-architecture-diagram.svg
