@@ -141,8 +141,8 @@ class JSONGenerator(BaseOutputGenerator):
             return {"note": "No data available for analysis"}
 
         # Calculate service coverage by region
-        region_coverage: Dict[str, int] = {}
-        service_coverage: Dict[str, int] = {}
+        region_coverage: Dict[str, List[str]] = {}
+        service_coverage: Dict[str, List[str]] = {}
 
         for item in data:
             region = item.get("Region Code")
