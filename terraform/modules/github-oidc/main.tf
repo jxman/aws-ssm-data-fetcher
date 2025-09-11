@@ -211,6 +211,7 @@ resource "aws_iam_policy" "github_actions_policy" {
           "states:DescribeExecution",
           "states:ListExecutions",
           "states:StopExecution",
+          "states:ValidateStateMachineDefinition",
           "states:TagResource",
           "states:UntagResource",
           "states:ListTagsForResource"
