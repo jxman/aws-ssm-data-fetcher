@@ -17,19 +17,27 @@ The AWS SSM Data Fetcher is a production-ready serverless application that autom
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Data Fetcher  │───▶│   Processor     │───▶│Report Generator │
-│  (38 Regions +  │    │ (Transform &    │    │(Excel + 5 CSVs) │
-│   396 Services) │    │   Analyze Data) │    │   Multi-Format  │
+│   Data Fetcher  │───▶│   Processor     │───▶│  JSON-CSV Gen   │
+│  (38 Regions +  │    │ (Transform &    │    │ • JSON reports  │
+│   396 Services) │    │   Analyze Data) │    │ • 5 CSV files   │
+│     ~14MB       │    │     ~49MB       │    │    3.2KB        │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 ▼
-                    ┌─────────────────┐
-                    │  Shared Layer   │
-                    │(requests, core) │
-                    └─────────────────┘
-                                 │
-                                 ▼
+                                                         │
+                                                         ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│Report Orchestr. │◀───│  Excel Gen      │◀───│  Shared Layer   │
+│ • Coordination  │    │ • Excel (5 tabs)│    │ (requests, core)│
+│ • Final upload  │    │ • openpyxl only │    │     ~34MB       │
+│    2.6KB        │    │     259KB       │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+
+🎯 **Modular Architecture Benefits:**
+- **5 Specialized Functions**: Each optimized for specific task (99.5% size reduction)
+- **Parallel Execution**: JSON/CSV and Excel generation can run concurrently
+- **Isolated Failures**: Individual retry logic and error handling per function
+- **Right-Sized Resources**: Memory allocation optimized per function type
+- **Enhanced Monitoring**: Detailed CloudWatch metrics for each stage
+
            ┌─────────────────────────────────────────┐
            │   🚀 PRODUCTION OPERATIONAL SYSTEM      │
            │ S3 • IAM • CloudWatch • Step Functions │
@@ -62,8 +70,15 @@ After successful deployment, verify all components:
 # Check Step Function
 aws stepfunctions list-state-machines --query 'stateMachines[?starts_with(name, `aws-ssm-fetcher-prod`)]'
 
-# Check Lambda functions
+# Check Lambda functions (5 specialized functions)
 aws lambda list-functions --query 'Functions[?starts_with(FunctionName, `aws-ssm-fetcher-prod`)]'
+
+# Verify individual functions are deployed
+aws lambda get-function --function-name aws-ssm-fetcher-prod-data-fetcher
+aws lambda get-function --function-name aws-ssm-fetcher-prod-processor
+aws lambda get-function --function-name aws-ssm-fetcher-prod-json-csv-generator
+aws lambda get-function --function-name aws-ssm-fetcher-prod-excel-generator
+aws lambda get-function --function-name aws-ssm-fetcher-prod-report-orchestrator
 
 # Check S3 bucket
 aws s3 ls | grep aws-ssm-fetcher-prod
@@ -126,9 +141,13 @@ The production deployment uses these optimized settings:
 - **Monitoring**: 14-day log retention
 - **Scheduling**: Daily execution at 6 AM UTC
 - **Notifications**: Enabled via SNS
-- **Lambda Memory**: Optimized for performance (data fetcher: 512MB, processor: 1024MB, generator: 1024MB)
-- **Lambda Timeout**: 15 minutes per function
-- **Dependencies**: Shared layer with requests, openpyxl, core modules
+- **Lambda Architecture**: 5 specialized functions with optimized resource allocation:
+  - **Data Fetcher**: 1024MB, 15min timeout (~14MB package)
+  - **Processor**: 3008MB, 15min timeout (~49MB package)
+  - **JSON-CSV Generator**: 512MB, 5min timeout (3.2KB package)
+  - **Excel Generator**: 1024MB, 5min timeout (259KB package)
+  - **Report Orchestrator**: 512MB, 5min timeout (2.6KB package)
+- **Dependencies**: Minimal shared layer (34MB) + function-specific dependencies
 - **S3**: Protected from accidental deletion
 
 ### Environment Variables

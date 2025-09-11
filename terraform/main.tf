@@ -132,27 +132,80 @@ module "lambda_processor" {
   common_tags = local.common_tags
 }
 
-module "lambda_report_generator" {
+module "lambda_json_csv_generator" {
   source = "./modules/lambda-function"
 
   project_name     = local.project_name
   environment      = var.environment
-  function_name    = "report-generator"
+  function_name    = "json-csv-generator"
   function_role    = module.iam.lambda_execution_role_arn
   lambda_layer_arn = module.lambda_layer.layer_arn
 
-  source_path = "../lambda_functions/report_generator"
+  source_path = "../lambda_functions/json_csv_generator"
   handler     = "lambda_function.lambda_handler"
   runtime     = "python3.11"
-  timeout     = 600  # 10 minutes
-  memory_size = 2048 # 2GB
+  timeout     = 300 # 5 minutes
+  memory_size = 512 # 512MB
 
   environment_variables = {
     S3_BUCKET        = module.s3_storage.bucket_name
     OUTPUT_S3_BUCKET = module.s3_storage.bucket_name
     CACHE_S3_BUCKET  = module.s3_storage.bucket_name
     S3_CACHE_BUCKET  = module.s3_storage.bucket_name
-    OUTPUT_PREFIX    = "reports"
+    LOG_LEVEL        = var.log_level
+    ENVIRONMENT      = var.environment
+  }
+
+  common_tags = local.common_tags
+}
+
+module "lambda_excel_generator" {
+  source = "./modules/lambda-function"
+
+  project_name     = local.project_name
+  environment      = var.environment
+  function_name    = "excel-generator"
+  function_role    = module.iam.lambda_execution_role_arn
+  lambda_layer_arn = module.lambda_layer.layer_arn
+
+  source_path = "../lambda_functions/excel_generator"
+  handler     = "lambda_function.lambda_handler"
+  runtime     = "python3.11"
+  timeout     = 300  # 5 minutes
+  memory_size = 1024 # 1GB
+
+  environment_variables = {
+    S3_BUCKET        = module.s3_storage.bucket_name
+    OUTPUT_S3_BUCKET = module.s3_storage.bucket_name
+    CACHE_S3_BUCKET  = module.s3_storage.bucket_name
+    S3_CACHE_BUCKET  = module.s3_storage.bucket_name
+    LOG_LEVEL        = var.log_level
+    ENVIRONMENT      = var.environment
+  }
+
+  common_tags = local.common_tags
+}
+
+module "lambda_report_orchestrator" {
+  source = "./modules/lambda-function"
+
+  project_name     = local.project_name
+  environment      = var.environment
+  function_name    = "report-orchestrator"
+  function_role    = module.iam.lambda_execution_role_arn
+  lambda_layer_arn = module.lambda_layer.layer_arn
+
+  source_path = "../lambda_functions/report_orchestrator"
+  handler     = "lambda_function.lambda_handler"
+  runtime     = "python3.11"
+  timeout     = 300 # 5 minutes
+  memory_size = 512 # 512MB
+
+  environment_variables = {
+    S3_BUCKET        = module.s3_storage.bucket_name
+    OUTPUT_S3_BUCKET = module.s3_storage.bucket_name
+    CACHE_S3_BUCKET  = module.s3_storage.bucket_name
+    S3_CACHE_BUCKET  = module.s3_storage.bucket_name
     LOG_LEVEL        = var.log_level
     ENVIRONMENT      = var.environment
   }
@@ -168,9 +221,11 @@ module "step_functions" {
   environment  = var.environment
   common_tags  = local.common_tags
 
-  data_fetcher_arn     = module.lambda_data_fetcher.function_arn
-  processor_arn        = module.lambda_processor.function_arn
-  report_generator_arn = module.lambda_report_generator.function_arn
+  data_fetcher_arn        = module.lambda_data_fetcher.function_arn
+  processor_arn           = module.lambda_processor.function_arn
+  json_csv_generator_arn  = module.lambda_json_csv_generator.function_arn
+  excel_generator_arn     = module.lambda_excel_generator.function_arn
+  report_orchestrator_arn = module.lambda_report_orchestrator.function_arn
 
   lambda_execution_role_arn = module.iam.step_functions_role_arn
 }
@@ -186,7 +241,9 @@ module "cloudwatch" {
   lambda_function_names = [
     module.lambda_data_fetcher.function_name,
     module.lambda_processor.function_name,
-    module.lambda_report_generator.function_name
+    module.lambda_json_csv_generator.function_name,
+    module.lambda_excel_generator.function_name,
+    module.lambda_report_orchestrator.function_name
   ]
 
   step_function_arn        = module.step_functions.state_machine_arn

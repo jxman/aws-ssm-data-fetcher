@@ -240,3 +240,6 @@ yarn-error.log*
 !.github/
 !.gitignore
 !terraform/terraform.tfvars
+# Excel generator dependencies
+lambda_functions/excel_generator/openpyxl/
+lambda_functions/excel_generator/et_xmlfile/

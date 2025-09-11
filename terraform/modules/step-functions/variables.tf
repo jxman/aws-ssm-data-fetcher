@@ -23,8 +23,18 @@ variable "processor_arn" {
   type        = string
 }
 
-variable "report_generator_arn" {
-  description = "ARN of the report generator Lambda function"
+variable "json_csv_generator_arn" {
+  description = "ARN of the JSON/CSV generator Lambda function"
+  type        = string
+}
+
+variable "excel_generator_arn" {
+  description = "ARN of the Excel generator Lambda function"
+  type        = string
+}
+
+variable "report_orchestrator_arn" {
+  description = "ARN of the report orchestrator Lambda function"
   type        = string
 }
 

@@ -67,28 +67,102 @@ resource "aws_sfn_state_machine" "main" {
             ResultPath  = "$.error"
           }
         ]
-        Next = "ReportGeneratorCheck"
+        Next = "JsonCsvGeneratorCheck"
       }
 
-      ReportGeneratorCheck = {
+      JsonCsvGeneratorCheck = {
         Type = "Choice"
         Choices = [
           {
             Variable     = "$.status"
             StringEquals = "success"
-            Next         = "ReportGenerator"
+            Next         = "JsonCsvGenerator"
           }
         ]
         Default = "FailureNotification"
       }
 
-      ReportGenerator = {
+      JsonCsvGenerator = {
         Type     = "Task"
-        Resource = var.report_generator_arn
+        Resource = var.json_csv_generator_arn
         Parameters = {
           "execution_id.$"            = "$$.Execution.Name"
           "input.$"                   = "$"
           "processed_data_location.$" = "$.processed_data_location"
+        }
+        Retry = [
+          {
+            ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"]
+            IntervalSeconds = 2
+            MaxAttempts     = 6
+            BackoffRate     = 2.0
+          }
+        ]
+        Catch = [
+          {
+            ErrorEquals = ["States.ALL"]
+            Next        = "FailureNotification"
+            ResultPath  = "$.error"
+          }
+        ]
+        Next = "JsonCsvCheck"
+      }
+
+      JsonCsvCheck = {
+        Type = "Choice"
+        Choices = [
+          {
+            Variable      = "$.statusCode"
+            NumericEquals = 200
+            Next          = "ExcelGenerator"
+          }
+        ]
+        Default = "FailureNotification"
+      }
+
+      ExcelGenerator = {
+        Type     = "Task"
+        Resource = var.excel_generator_arn
+        Parameters = {
+          "execution_id.$" = "$$.Execution.Name"
+          "summary.$"      = "$.summary"
+        }
+        Retry = [
+          {
+            ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"]
+            IntervalSeconds = 2
+            MaxAttempts     = 6
+            BackoffRate     = 2.0
+          }
+        ]
+        Catch = [
+          {
+            ErrorEquals = ["States.ALL"]
+            Next        = "FailureNotification"
+            ResultPath  = "$.error"
+          }
+        ]
+        Next = "ExcelCheck"
+      }
+
+      ExcelCheck = {
+        Type = "Choice"
+        Choices = [
+          {
+            Variable      = "$.statusCode"
+            NumericEquals = 200
+            Next          = "ReportOrchestrator"
+          }
+        ]
+        Default = "FailureNotification"
+      }
+
+      ReportOrchestrator = {
+        Type     = "Task"
+        Resource = var.report_orchestrator_arn
+        Parameters = {
+          "execution_id.$" = "$$.Execution.Name"
+          "summary.$"      = "$.summary"
         }
         Retry = [
           {
