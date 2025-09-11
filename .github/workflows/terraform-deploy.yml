@@ -1,5 +1,19 @@
 name: 'Terraform Deployment'
 
+# 🚀 Terraform Deployment Workflow
+#
+# This workflow handles Terraform infrastructure deployment with proper exit code handling.
+#
+# 📋 Understanding Terraform Exit Codes:
+# • Exit Code 0: No changes needed - infrastructure is up to date
+# • Exit Code 1: Actual error/failure - requires investigation and fixes
+# • Exit Code 2: Changes detected and plan created successfully - ready to apply
+#
+# ⚠️  GitHub Actions UI may show "annotations" for exit code 2, but this is NORMAL
+#     and indicates successful planning with changes detected, not an error.
+#
+# 🔧 This workflow properly handles all exit codes and provides clear status messages.
+
 on:
   push:
     branches:
@@ -142,11 +156,38 @@ jobs:
     - name: Terraform Plan
       id: plan
       run: |
+        # Terraform Exit Codes:
+        # - Exit Code 0: No changes needed
+        # - Exit Code 1: Actual error/failure
+        # - Exit Code 2: Changes detected and plan created successfully ✅
+
+        echo "🔍 Running Terraform plan with detailed exit codes..."
+        set +e  # Disable exit on error to handle Terraform exit codes properly
         terraform plan \
           -out=tfplan-prod \
           -detailed-exitcode
-        echo "plan_exitcode=$?" >> $GITHUB_OUTPUT
-      continue-on-error: true
+        PLAN_EXIT_CODE=$?
+        set -e  # Re-enable exit on error
+
+        echo "plan_exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+
+        # Provide clear feedback based on exit code
+        case $PLAN_EXIT_CODE in
+          0)
+            echo "✅ Terraform plan completed: No changes needed"
+            ;;
+          1)
+            echo "❌ Terraform plan failed with errors"
+            exit 1
+            ;;
+          2)
+            echo "✅ Terraform plan completed: Changes detected and ready to apply"
+            ;;
+          *)
+            echo "⚠️ Terraform plan returned unexpected exit code: $PLAN_EXIT_CODE"
+            exit 1
+            ;;
+        esac
 
     - name: Update Pull Request
       uses: actions/github-script@v7
@@ -186,6 +227,7 @@ jobs:
       if: steps.plan.outputs.plan_exitcode == '1'
       run: |
         echo "❌ Terraform plan failed with actual error (exit code 1)"
+        echo "💡 Exit code 1 indicates a real Terraform error that needs to be resolved"
         exit 1
 
     - name: Terraform Apply
