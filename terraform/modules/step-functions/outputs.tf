@@ -1,11 +1,11 @@
 output "state_machine_arn" {
   description = "ARN of the Step Functions state machine"
-  value       = aws_sfn_state_machine.main.arn
+  value       = var.skip_validation ? "" : aws_sfn_state_machine.main[0].arn
 }
 
 output "state_machine_name" {
   description = "Name of the Step Functions state machine"
-  value       = aws_sfn_state_machine.main.name
+  value       = var.skip_validation ? "" : aws_sfn_state_machine.main[0].name
 }
 
 output "sns_topic_arn" {

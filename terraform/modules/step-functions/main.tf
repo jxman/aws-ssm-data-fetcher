@@ -1,5 +1,6 @@
 # Step Functions State Machine
 resource "aws_sfn_state_machine" "main" {
+  count    = var.skip_validation ? 0 : 1
   name     = "${var.project_name}-${var.environment}-pipeline"
   role_arn = var.lambda_execution_role_arn
 

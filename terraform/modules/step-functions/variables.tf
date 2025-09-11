@@ -60,3 +60,9 @@ variable "schedule_expression" {
   type        = string
   default     = "rate(24 hours)"
 }
+
+variable "skip_validation" {
+  description = "Skip Step Functions validation during deployment (temporary fix for IAM permissions)"
+  type        = bool
+  default     = false
+}

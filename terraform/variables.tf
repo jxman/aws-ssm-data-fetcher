@@ -72,3 +72,9 @@ variable "enable_sns_notifications" {
   type        = bool
   default     = true
 }
+
+variable "skip_step_functions_validation" {
+  description = "Temporarily skip Step Functions validation (for IAM bootstrapping)"
+  type        = bool
+  default     = false
+}

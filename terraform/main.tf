@@ -228,6 +228,7 @@ module "step_functions" {
   report_orchestrator_arn = module.lambda_report_orchestrator.function_arn
 
   lambda_execution_role_arn = module.iam.step_functions_role_arn
+  skip_validation           = var.skip_step_functions_validation
 }
 
 # CloudWatch monitoring
