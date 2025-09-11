@@ -30,10 +30,10 @@ output "log_group_arn" {
 
 output "schedule_rule_arn" {
   description = "ARN of the CloudWatch Events rule (if enabled)"
-  value       = var.enable_scheduled_execution ? aws_cloudwatch_event_rule.schedule[0].arn : null
+  value       = var.enable_scheduled_execution && !var.skip_validation ? aws_cloudwatch_event_rule.schedule[0].arn : null
 }
 
 output "schedule_rule_name" {
   description = "Name of the CloudWatch Events rule (if enabled)"
-  value       = var.enable_scheduled_execution ? aws_cloudwatch_event_rule.schedule[0].name : null
+  value       = var.enable_scheduled_execution && !var.skip_validation ? aws_cloudwatch_event_rule.schedule[0].name : null
 }

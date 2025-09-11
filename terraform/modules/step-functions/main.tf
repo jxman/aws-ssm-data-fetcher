@@ -279,7 +279,7 @@ data "aws_caller_identity" "current" {}
 
 # Optional: CloudWatch Events rule for scheduled execution
 resource "aws_cloudwatch_event_rule" "schedule" {
-  count               = var.enable_scheduled_execution ? 1 : 0
+  count               = var.enable_scheduled_execution && !var.skip_validation ? 1 : 0
   name                = "${var.project_name}-${var.environment}-schedule"
   description         = "Scheduled execution for ${var.project_name}"
   schedule_expression = var.schedule_expression
@@ -290,10 +290,10 @@ resource "aws_cloudwatch_event_rule" "schedule" {
 }
 
 resource "aws_cloudwatch_event_target" "step_function" {
-  count     = var.enable_scheduled_execution ? 1 : 0
+  count     = var.enable_scheduled_execution && !var.skip_validation ? 1 : 0
   rule      = aws_cloudwatch_event_rule.schedule[0].name
   target_id = "StepFunctionTarget"
-  arn       = aws_sfn_state_machine.main.arn
+  arn       = aws_sfn_state_machine.main[0].arn
   role_arn  = var.events_role_arn
 
   input = jsonencode({
