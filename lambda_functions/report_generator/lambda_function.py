@@ -100,20 +100,52 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             json.dump(json_report, f, indent=2)
         generated_files["json"] = json_path
 
-        # Generate CSV report (Regional Services only)
-        logger.info("Generating CSV report...")
+        # Generate CSV reports for all Excel tabs
+        logger.info("Generating CSV reports for all tabs...")
         import csv
 
-        csv_path = os.path.join(temp_output_dir, "aws_regions_services.csv")
-        with open(csv_path, "w", newline="") as f:
-            if regional_services_data:
-                writer = csv.DictWriter(f, fieldnames=regional_services_data[0].keys())
-                writer.writeheader()
-                writer.writerows(regional_services_data)
-            else:
-                writer = csv.writer(f)
-                writer.writerow(["No data available"])
-        generated_files["csv"] = csv_path
+        # Generate all sheets data first (needed for CSV generation)
+        sheets_data = _generate_all_sheets(
+            regional_services_data, regions_map, services_map, rss_data
+        )
+
+        # Generate separate CSV files for each sheet
+        csv_files = {}
+        for sheet_name, sheet_data in sheets_data.items():
+            # Create CSV filename based on sheet name
+            csv_filename = f"{sheet_name.lower().replace(' ', '_')}.csv"
+            csv_path = os.path.join(temp_output_dir, csv_filename)
+
+            with open(csv_path, "w", newline="") as f:
+                if sheet_name == "Statistics":
+                    # Statistics sheet is a list of lists
+                    writer = csv.writer(f)
+                    writer.writerows(sheet_data)
+                else:
+                    # Other sheets are list of dictionaries
+                    if sheet_data and isinstance(sheet_data[0], dict):
+                        writer = csv.DictWriter(f, fieldnames=sheet_data[0].keys())
+                        writer.writeheader()
+                        writer.writerows(sheet_data)
+                    else:
+                        writer = csv.writer(f)
+                        writer.writerow(["No data available"])
+
+            csv_files[sheet_name] = csv_path
+            logger.info(f"Generated CSV: {csv_filename}")
+
+        # Also keep the main regional services CSV for backward compatibility
+        main_csv_path = os.path.join(temp_output_dir, "aws_regions_services.csv")
+        if "Regional Services" in csv_files:
+            import shutil
+
+            shutil.copy2(csv_files["Regional Services"], main_csv_path)
+            generated_files["csv"] = main_csv_path
+
+        # Add all CSV files to generated files
+        for sheet_name, csv_path in csv_files.items():
+            key = f"csv_{sheet_name.lower().replace(' ', '_')}"
+            generated_files[key] = csv_path
 
         # Generate Excel report with all 5 sheets
         logger.info("Generating comprehensive Excel report...")

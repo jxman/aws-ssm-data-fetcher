@@ -4,7 +4,7 @@ Complete guide for deploying the AWS SSM Data Fetcher serverless application to 
 
 ## 📋 Overview
 
-The AWS SSM Data Fetcher is a production-ready serverless application that automatically discovers AWS services and generates comprehensive reports. All deployment is handled through GitHub Actions with OIDC authentication.
+The AWS SSM Data Fetcher is a production-ready serverless application that automatically discovers AWS services across all 38 AWS regions and generates comprehensive reports in multiple formats (Excel, JSON, CSV). All deployment is handled through GitHub Actions with OIDC authentication.
 
 ## ✅ Prerequisites
 
@@ -18,22 +18,23 @@ The AWS SSM Data Fetcher is a production-ready serverless application that autom
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Data Fetcher  │───▶│   Processor     │───▶│Report Generator │
-│  (Fetch & Cache)│    │ (Transform &    │    │ (Excel/JSON/CSV)│
-│    Lambda       │    │   Analyze Data) │    │    Lambda       │
+│  (38 Regions +  │    │ (Transform &    │    │(Excel + 5 CSVs) │
+│   396 Services) │    │   Analyze Data) │    │   Multi-Format  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          └───────────────────────┼───────────────────────┘
                                  ▼
                     ┌─────────────────┐
                     │  Shared Layer   │
-                    │ (Core Modules)  │
+                    │(requests, core) │
                     └─────────────────┘
                                  │
                                  ▼
            ┌─────────────────────────────────────────┐
-           │      🚀 AWS Infrastructure (PROD)       │
+           │   🚀 PRODUCTION OPERATIONAL SYSTEM      │
            │ S3 • IAM • CloudWatch • Step Functions │
-           │        GitHub Actions CI/CD             │
+           │     8,558 Service-Region Combinations   │
+           │       GitHub Actions CI/CD              │
            │       OIDC Authentication               │
            └─────────────────────────────────────────┘
 ```
@@ -94,12 +95,23 @@ aws logs tail /aws/lambda/aws-ssm-fetcher-prod-data-fetcher --follow
 
 ### Download Reports
 
+The pipeline generates comprehensive reports in multiple formats:
+
 ```bash
 # List available reports
 aws s3 ls s3://YOUR-BUCKET-NAME/reports/
 
-# Download latest reports
+# Download latest reports (includes Excel + 5 CSVs)
 aws s3 sync s3://YOUR-BUCKET-NAME/reports/ ./reports/
+
+# Available report formats:
+# - aws_regions_services.xlsx (Excel with 5 tabs)
+# - aws_regions_services.json (full data)
+# - regional_services.csv (regional service mappings)
+# - service_matrix.csv (service availability matrix)
+# - region_summary.csv (region statistics)
+# - service_summary.csv (service statistics)
+# - statistics.csv (overall statistics)
 ```
 
 ## 🛠️ Configuration
@@ -108,12 +120,15 @@ aws s3 sync s3://YOUR-BUCKET-NAME/reports/ ./reports/
 
 The production deployment uses these optimized settings:
 
+- **Data Coverage**: 38 AWS regions, 396+ services, 8,558+ combinations
+- **Report Formats**: Excel (5 tabs) + JSON + 5 CSV files
 - **Log Level**: INFO
 - **Monitoring**: 14-day log retention
 - **Scheduling**: Daily execution at 6 AM UTC
 - **Notifications**: Enabled via SNS
-- **Lambda Memory**: Optimized for performance
+- **Lambda Memory**: Optimized for performance (data fetcher: 512MB, processor: 1024MB, generator: 1024MB)
 - **Lambda Timeout**: 15 minutes per function
+- **Dependencies**: Shared layer with requests, openpyxl, core modules
 - **S3**: Protected from accidental deletion
 
 ### Environment Variables
