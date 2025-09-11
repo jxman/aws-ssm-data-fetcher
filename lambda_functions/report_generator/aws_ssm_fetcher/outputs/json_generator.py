@@ -66,7 +66,7 @@ class JSONGenerator(BaseOutputGenerator):
 
         # Create enhanced metadata
         metadata = {
-            **self.context.metadata,
+            **(self.context.metadata or {}),
             "total_combinations": stats["combinations"],
             "unique_regions": stats["regions"],
             "unique_services": stats["services"],
@@ -137,8 +137,8 @@ class JSONGenerator(BaseOutputGenerator):
             return {"note": "No data available for analysis"}
 
         # Calculate service coverage by region
-        region_coverage = {}
-        service_coverage = {}
+        region_coverage: Dict[str, List[str]] = {}
+        service_coverage: Dict[str, List[str]] = {}
 
         for item in data:
             region = item.get("Region Code")

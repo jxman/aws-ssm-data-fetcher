@@ -295,7 +295,7 @@ class ExcelGenerator(BaseOutputGenerator):
             {"Metric": "Data Source", "Value": "AWS SSM Parameter Store"},
             {
                 "Metric": "Generated At",
-                "Value": self.context.metadata.get("generated_at", "N/A"),
+                "Value": self.context.metadata.get("generated_at", "N/A") if self.context.metadata else "N/A",
             },
         ]
 
