@@ -18,9 +18,19 @@ output "lambda_processor_arn" {
   value       = module.lambda_processor.function_arn
 }
 
-output "lambda_report_generator_arn" {
-  description = "ARN of the report generator Lambda function"
-  value       = module.lambda_report_generator.function_arn
+output "lambda_json_csv_generator_arn" {
+  description = "ARN of the JSON-CSV generator Lambda function"
+  value       = module.lambda_json_csv_generator.function_arn
+}
+
+output "lambda_excel_generator_arn" {
+  description = "ARN of the Excel generator Lambda function"
+  value       = module.lambda_excel_generator.function_arn
+}
+
+output "lambda_report_orchestrator_arn" {
+  description = "ARN of the report orchestrator Lambda function"
+  value       = module.lambda_report_orchestrator.function_arn
 }
 
 output "lambda_layer_arn" {
@@ -83,9 +93,11 @@ output "deployment_info" {
     s3_bucket     = module.s3_storage.bucket_name
     step_function = module.step_functions.state_machine_name
     lambda_functions = {
-      data_fetcher     = module.lambda_data_fetcher.function_name
-      processor        = module.lambda_processor.function_name
-      report_generator = module.lambda_report_generator.function_name
+      data_fetcher        = module.lambda_data_fetcher.function_name
+      processor           = module.lambda_processor.function_name
+      json_csv_generator  = module.lambda_json_csv_generator.function_name
+      excel_generator     = module.lambda_excel_generator.function_name
+      report_orchestrator = module.lambda_report_orchestrator.function_name
     }
     eventbridge = {
       rule_name           = module.eventbridge.eventbridge_rule_name
