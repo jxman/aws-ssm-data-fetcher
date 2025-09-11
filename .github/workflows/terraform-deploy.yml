@@ -111,7 +111,7 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ${{ env.TF_VERSION }}
-        terraform_wrapper: false
+        terraform_wrapper: true
 
     - name: Set Environment
       id: env
@@ -156,36 +156,36 @@ jobs:
     - name: Terraform Plan
       id: plan
       run: |
-        # Terraform Exit Codes:
-        # - Exit Code 0: No changes needed
-        # - Exit Code 1: Actual error/failure
-        # - Exit Code 2: Changes detected and plan created successfully ✅
+        # Using hashicorp/setup-terraform with terraform_wrapper: true
+        # This automatically handles exit codes and provides clean outputs:
+        # - steps.plan.outputs.exitcode (0, 1, or 2)
+        # - steps.plan.outputs.stdout (plan output)
+        # - steps.plan.outputs.stderr (error output)
 
-        echo "🔍 Running Terraform plan with detailed exit codes..."
-        set +e  # Disable exit on error to handle Terraform exit codes properly
+        echo "🔍 Running Terraform plan..."
         terraform plan \
           -out=tfplan-prod \
           -detailed-exitcode
-        PLAN_EXIT_CODE=$?
-        set -e  # Re-enable exit on error
 
-        echo "plan_exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+    - name: Terraform Plan Summary
+      run: |
+        # Using official hashicorp/setup-terraform action outputs
+        EXIT_CODE="${{ steps.plan.outputs.exitcode }}"
 
-        # Provide clear feedback based on exit code
-        case $PLAN_EXIT_CODE in
+        echo "📋 Terraform Plan Results:"
+        case $EXIT_CODE in
           0)
-            echo "✅ Terraform plan completed: No changes needed"
+            echo "✅ No changes needed - infrastructure is up to date"
             ;;
           1)
-            echo "❌ Terraform plan failed with errors"
-            exit 1
+            echo "❌ Plan failed with errors - see output above for details"
             ;;
           2)
-            echo "✅ Terraform plan completed: Changes detected and ready to apply"
+            echo "✅ Changes detected and plan created successfully"
+            echo "🔄 Ready to apply when approved"
             ;;
           *)
-            echo "⚠️ Terraform plan returned unexpected exit code: $PLAN_EXIT_CODE"
-            exit 1
+            echo "⚠️ Unexpected exit code: $EXIT_CODE"
             ;;
         esac
 
@@ -197,7 +197,7 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const exitCode = '${{ steps.plan.outputs.plan_exitcode }}';
+          const exitCode = '${{ steps.plan.outputs.exitcode }}';
           const planStatus = exitCode === '0' ? 'No Changes' : exitCode === '2' ? 'Changes Detected' : 'Failed';
           const statusIcon = exitCode === '1' ? '❌' : '✅';
 
@@ -224,14 +224,15 @@ jobs:
           })
 
     - name: Terraform Plan Status
-      if: steps.plan.outputs.plan_exitcode == '1'
+      if: steps.plan.outputs.exitcode == '1'
       run: |
         echo "❌ Terraform plan failed with actual error (exit code 1)"
         echo "💡 Exit code 1 indicates a real Terraform error that needs to be resolved"
+        echo "🔍 Check the plan output above for detailed error information"
         exit 1
 
     - name: Terraform Apply
-      if: steps.action.outputs.action == 'apply' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
+      if: steps.action.outputs.action == 'apply' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && (steps.plan.outputs.exitcode == '0' || steps.plan.outputs.exitcode == '2')
       run: |
         terraform apply \
           -auto-approve \
@@ -249,7 +250,7 @@ jobs:
         echo "🗑️ Infrastructure destroyed successfully!"
 
     - name: Test Infrastructure
-      if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
+      if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.exitcode == '0' || steps.plan.outputs.exitcode == '2')
       run: |
         echo "🧪 Testing deployed infrastructure..."
 
@@ -298,7 +299,7 @@ jobs:
         echo "✅ Infrastructure test completed successfully!"
 
     - name: Deployment Summary
-      if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.plan_exitcode == '0' || steps.plan.outputs.plan_exitcode == '2')
+      if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.exitcode == '0' || steps.plan.outputs.exitcode == '2')
       run: |
         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
