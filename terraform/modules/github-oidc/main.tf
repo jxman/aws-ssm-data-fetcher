@@ -110,6 +110,7 @@ resource "aws_iam_policy" "github_actions_policy" {
           "lambda:UpdateFunctionConfiguration",
           "lambda:ListFunctions",
           "lambda:ListVersionsByFunction",
+          "lambda:GetFunctionCodeSigningConfig",
           "lambda:CreateAlias",
           "lambda:DeleteAlias",
           "lambda:GetAlias",
