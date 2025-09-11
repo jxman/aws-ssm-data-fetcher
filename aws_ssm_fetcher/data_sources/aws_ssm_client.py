@@ -3,7 +3,7 @@
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union, cast
 
 import boto3
 from botocore.exceptions import ClientError
@@ -68,7 +68,7 @@ class AWSSSMClient(AWSDataSource):
             self.logger.info(f"Initialized SSM client for region: {self.region}")
         return self._client
 
-    def fetch_data(self, data_type: str, **kwargs) -> Optional[List]:
+    def fetch_data(self, **kwargs: Any) -> Any:
         """Fetch data based on type.
 
         Args:
@@ -78,6 +78,7 @@ class AWSSSMClient(AWSDataSource):
         Returns:
             List of fetched data or None if failed
         """
+        data_type = kwargs.get("data_type")
         if data_type == "regions":
             return self.discover_regions()
         elif data_type == "services":
@@ -109,7 +110,7 @@ class AWSSSMClient(AWSDataSource):
         cached_data = self.get_cached_data(cache_key)
         if cached_data is not None:
             self.logger.info("Using cached discovered regions")
-            return cached_data
+            return cast(List[str], cached_data)
 
         self.logger.info("Discovering AWS regions from SSM parameters...")
 
@@ -168,7 +169,7 @@ class AWSSSMClient(AWSDataSource):
         cached_data = self.get_cached_data(cache_key)
         if cached_data is not None:
             self.logger.info("Using cached discovered services")
-            return cached_data
+            return cast(List[str], cached_data)
 
         self.logger.info("Discovering AWS services from SSM parameters...")
 
@@ -274,7 +275,7 @@ class AWSSSMClient(AWSDataSource):
         cached_data = self.get_cached_data(cache_key)
         if cached_data is not None:
             self.logger.info("Using cached region names")
-            return cached_data
+            return cast(Dict[str, str], cached_data)
 
         self.logger.info("Fetching region display names...")
 
@@ -318,7 +319,7 @@ class AWSSSMClient(AWSDataSource):
         cached_data = self.get_cached_data(cache_key)
         if cached_data is not None:
             self.logger.info("Using cached service names")
-            return cached_data
+            return cast(Dict[str, str], cached_data)
 
         self.logger.info("Fetching service display names...")
 
@@ -365,7 +366,7 @@ class AWSSSMClient(AWSDataSource):
         try:
             ssm = self.get_client()
             response = ssm.get_parameter(Name=parameter_path)
-            return response["Parameter"]["Value"]
+            return cast(str, response["Parameter"]["Value"])
         except ClientError as e:
             self.logger.warning(f"Failed to get parameter {parameter_path}: {e}")
             return None
@@ -488,7 +489,7 @@ class AWSSSMClient(AWSDataSource):
         cached_data = self.get_cached_data(cache_key)
         if cached_data is not None:
             self.logger.info("Using cached availability zone data")
-            return cached_data
+            return cast(Dict[str, int], cached_data)
 
         self.logger.info("Fetching availability zone data with full pagination...")
 
@@ -599,7 +600,7 @@ class AWSSSMClient(AWSDataSource):
         cached_data = self.get_cached_data(cache_key)
         if cached_data is not None:
             self.logger.info("Using cached discovered regions")
-            return cached_data
+            return cast(List[str], cached_data)
 
         self.logger.info("Discovering all regions from SSM parameters...")
         discovered_regions = []
@@ -672,7 +673,7 @@ class AWSSSMClient(AWSDataSource):
         cached_data = self.get_cached_data(cache_key)
         if cached_data is not None:
             self.logger.info("Using cached discovered services")
-            return cached_data
+            return cast(List[str], cached_data)
 
         self.logger.info("Discovering all services from SSM parameters...")
         services = set()
@@ -755,7 +756,7 @@ class AWSSSMClient(AWSDataSource):
         cached_data = self.get_cached_data(cache_key)
         if cached_data is not None:
             self.logger.info("Using cached region-services mapping")
-            return cached_data
+            return cast(Dict[str, List[str]], cached_data)
 
         self.logger.info("Mapping services to regions using actual AWS SSM data...")
 

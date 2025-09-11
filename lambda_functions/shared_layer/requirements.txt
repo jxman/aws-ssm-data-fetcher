@@ -1,10 +1,10 @@
 # Shared Lambda Layer Dependencies
-# Only lightweight common dependencies
+# Complete dependencies for all Lambda functions
 
-# Date/time parsing (lightweight, used by all functions)
+# Date/time parsing (required by all functions)
 python-dateutil>=2.8.2
 
-# Logging enhancements (lightweight, shared by all)
+# Logging enhancements (shared by all)
 structlog>=23.2.0
 
 # HTTP requests (required by RSS client and error handling)
@@ -15,12 +15,16 @@ urllib3>=2.0.0
 # RSS parsing (required by RSS client)
 feedparser>=6.0.10
 
+# Data processing dependencies (required by processor and report generators)
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Excel generation (required by Excel report generator)
+openpyxl>=3.1.0
+
 # Configuration and utilities (built-in modules used by our package)
 # json, os, sys, logging, datetime - all built-in
 # tempfile, zipfile - built-in modules
 
-# Note: Heavy dependencies moved to individual function packages:
-# - pandas/numpy moved to processor and report_generator
-# - openpyxl moved to report_generator only
-# - scipy moved to processor only
-# - boto3/botocore available in Lambda runtime
+# Note: boto3/botocore available in Lambda runtime
+# Note: Adding all dependencies to shared layer for consistency
