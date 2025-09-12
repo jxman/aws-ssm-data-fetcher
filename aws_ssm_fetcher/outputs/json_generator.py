@@ -1,13 +1,48 @@
 """JSON output generator for AWS SSM Data Fetcher."""
 
 import json
+from datetime import datetime
 from typing import Any, Dict, List
+
+import pytz
 
 from .base import BaseOutputGenerator, OutputContext, OutputError
 
 
 class JSONGenerator(BaseOutputGenerator):
     """Generate comprehensive JSON output with metadata."""
+
+    def _get_est_timestamp(self) -> str:
+        """Get current timestamp in EST timezone with timezone code.
+
+        Returns:
+            Formatted timestamp string in EST with timezone code
+        """
+        # Get current UTC time
+        utc_now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+        # Convert to EST (US/Eastern handles EDT/EST automatically)
+        eastern = pytz.timezone("US/Eastern")
+        est_time = utc_now.astimezone(eastern)
+
+        # Format with timezone abbreviation (EST/EDT)
+        return est_time.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+    def _get_est_isoformat(self) -> str:
+        """Get current timestamp in EST timezone in ISO format.
+
+        Returns:
+            ISO formatted timestamp string in EST
+        """
+        # Get current UTC time
+        utc_now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+        # Convert to EST (US/Eastern handles EDT/EST automatically)
+        eastern = pytz.timezone("US/Eastern")
+        est_time = utc_now.astimezone(eastern)
+
+        # Return ISO format
+        return est_time.isoformat()
 
     def get_default_filename(self) -> str:
         """Get default filename for JSON output.
@@ -64,18 +99,34 @@ class JSONGenerator(BaseOutputGenerator):
         """
         stats = self._get_data_statistics(data)
 
-        # Create enhanced metadata
+        # Create enhanced metadata with EST timezone
         base_metadata: Dict[str, Any] = self.context.metadata or {}
+
+        # Get current EST timestamp
+        est_timestamp = self._get_est_timestamp()
+        est_iso = self._get_est_isoformat()
+
         metadata: Dict[str, Any] = {
+            "generated_at": est_iso,
+            "generated_at_readable": est_timestamp,
+            "timezone": "US/Eastern",
             "total_combinations": stats["combinations"],
             "unique_regions": stats["regions"],
             "unique_services": stats["services"],
             "format_version": "2.0",
         }
-        # Add base metadata
+
+        # Add base metadata (but preserve our EST timestamps)
         for key, value in base_metadata.items():
             if key not in metadata:
                 metadata[key] = value
+
+        # Ensure execution_date is also in EST format if present
+        if "execution_date" not in metadata:
+            utc_now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+            eastern = pytz.timezone("US/Eastern")
+            est_time = utc_now.astimezone(eastern)
+            metadata["execution_date"] = est_time.strftime("%Y-%m-%d")
 
         # Add additional metadata if available
         if self.context.region_names:

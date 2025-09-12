@@ -1,8 +1,10 @@
 """Excel output generator for AWS SSM Data Fetcher."""
 
+from datetime import datetime
 from typing import Dict, List
 
 import pandas as pd
+import pytz
 from openpyxl.styles import Font, NamedStyle, PatternFill
 
 from .base import BaseOutputGenerator, OutputContext, OutputError
@@ -10,6 +12,22 @@ from .base import BaseOutputGenerator, OutputContext, OutputError
 
 class ExcelGenerator(BaseOutputGenerator):
     """Generate comprehensive Excel reports with multiple formatted sheets."""
+
+    def _get_est_timestamp(self) -> str:
+        """Get current timestamp in EST timezone with timezone code.
+
+        Returns:
+            Formatted timestamp string in EST with timezone code
+        """
+        # Get current UTC time
+        utc_now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+        # Convert to EST (US/Eastern handles EDT/EST automatically)
+        eastern = pytz.timezone("US/Eastern")
+        est_time = utc_now.astimezone(eastern)
+
+        # Format with timezone abbreviation (EST/EDT)
+        return est_time.strftime("%Y-%m-%d %H:%M:%S %Z")
 
     def __init__(self, context: OutputContext):
         """Initialize Excel generator.
@@ -295,11 +313,7 @@ class ExcelGenerator(BaseOutputGenerator):
             {"Metric": "Data Source", "Value": "AWS SSM Parameter Store"},
             {
                 "Metric": "Generated At",
-                "Value": (
-                    self.context.metadata.get("generated_at", "N/A")
-                    if self.context.metadata
-                    else "N/A"
-                ),
+                "Value": self._get_est_timestamp(),
             },
         ]
 

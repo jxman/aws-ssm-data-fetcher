@@ -1,15 +1,33 @@
 """CSV output generator for AWS SSM Data Fetcher."""
 
 import csv
+from datetime import datetime
 from typing import Dict, List
 
 import pandas as pd
+import pytz
 
 from .base import BaseOutputGenerator, OutputContext, OutputError
 
 
 class CSVGenerator(BaseOutputGenerator):
     """Generate CSV output files."""
+
+    def _get_est_timestamp(self) -> str:
+        """Get current timestamp in EST timezone with timezone code.
+
+        Returns:
+            Formatted timestamp string in EST with timezone code
+        """
+        # Get current UTC time
+        utc_now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+        # Convert to EST (US/Eastern handles EDT/EST automatically)
+        eastern = pytz.timezone("US/Eastern")
+        est_time = utc_now.astimezone(eastern)
+
+        # Format with timezone abbreviation (EST/EDT)
+        return est_time.strftime("%Y-%m-%d %H:%M:%S %Z")
 
     def get_default_filename(self) -> str:
         """Get default filename for CSV output.
@@ -55,6 +73,22 @@ class CSVGenerator(BaseOutputGenerator):
 
 class MultiCSVGenerator(BaseOutputGenerator):
     """Generate multiple CSV files (one per Excel sheet equivalent)."""
+
+    def _get_est_timestamp(self) -> str:
+        """Get current timestamp in EST timezone with timezone code.
+
+        Returns:
+            Formatted timestamp string in EST with timezone code
+        """
+        # Get current UTC time
+        utc_now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+        # Convert to EST (US/Eastern handles EDT/EST automatically)
+        eastern = pytz.timezone("US/Eastern")
+        est_time = utc_now.astimezone(eastern)
+
+        # Format with timezone abbreviation (EST/EDT)
+        return est_time.strftime("%Y-%m-%d %H:%M:%S %Z")
 
     def get_default_filename(self) -> str:
         """Get default base filename for multi-CSV output.
@@ -331,11 +365,7 @@ class MultiCSVGenerator(BaseOutputGenerator):
             {"Metric": "Data Source", "Value": "AWS SSM Parameter Store"},
             {
                 "Metric": "Generated At",
-                "Value": (
-                    self.context.metadata.get("generated_at", "N/A")
-                    if self.context.metadata
-                    else "N/A"
-                ),
+                "Value": self._get_est_timestamp(),
             },
         ]
 
