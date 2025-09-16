@@ -171,6 +171,18 @@ build_lightweight_function() {
         echo "   ✅ Copied aws_ssm_fetcher modules"
     fi
 
+    # Install lightweight dependencies directly in function package for reliability
+    if [ -f "$LAMBDA_DIR/core_layer/requirements.txt" ]; then
+        echo "   Installing lightweight dependencies in function package..."
+        pip install -r "$LAMBDA_DIR/core_layer/requirements.txt" -t "$build_dir" --quiet
+
+        # Clean up to keep size minimal
+        find "$build_dir" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+        find "$build_dir" -type f -name "*.pyc" -delete 2>/dev/null || true
+        find "$build_dir" -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+        echo "   ✅ Installed lightweight dependencies"
+    fi
+
     # Create deployment package
     local package_file="$function_dir/deployment_package.zip"
     echo "   Creating deployment package..."
