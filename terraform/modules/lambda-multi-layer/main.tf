@@ -18,7 +18,7 @@ resource "null_resource" "build_core_layer" {
 resource "aws_lambda_layer_version" "core_layer" {
   filename                 = "${path.root}/../lambda_functions/core_layer/core_layer.zip"
   layer_name               = "${var.project_name}-${var.environment}-core-layer"
-  source_code_hash         = filebase64sha256("${path.root}/../lambda_functions/core_layer/core_layer.zip")
+  source_code_hash         = null_resource.build_core_layer.triggers.requirements_hash
   compatible_runtimes      = ["python3.11"]
   compatible_architectures = ["x86_64"]
 
@@ -37,7 +37,7 @@ resource "aws_lambda_layer_version" "heavy_data_layer" {
 
   filename                 = "${path.root}/../lambda_functions/heavy_data_layer/heavy_data_layer.zip"
   layer_name               = "${var.project_name}-${var.environment}-heavy-data-layer"
-  source_code_hash         = filebase64sha256("${path.root}/../lambda_functions/heavy_data_layer/heavy_data_layer.zip")
+  source_code_hash         = filesha256("${path.root}/../lambda_functions/heavy_data_layer/requirements.txt")
   compatible_runtimes      = ["python3.11"]
   compatible_architectures = ["x86_64"]
 
