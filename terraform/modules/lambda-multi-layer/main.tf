@@ -15,18 +15,10 @@ resource "null_resource" "build_core_layer" {
 }
 
 # Core layer with lightweight dependencies
-data "archive_file" "core_layer_zip" {
-  type        = "zip"
-  source_file = "${path.root}/../lambda_functions/core_layer/core_layer.zip"
-  output_path = "${path.root}/../lambda_functions/core_layer_terraform.zip"
-
-  depends_on = [null_resource.build_core_layer]
-}
-
 resource "aws_lambda_layer_version" "core_layer" {
-  filename                 = data.archive_file.core_layer_zip.output_path
+  filename                 = "${path.root}/../lambda_functions/core_layer/core_layer.zip"
   layer_name               = "${var.project_name}-${var.environment}-core-layer"
-  source_code_hash         = data.archive_file.core_layer_zip.output_base64sha256
+  source_code_hash         = filebase64sha256("${path.root}/../lambda_functions/core_layer/core_layer.zip")
   compatible_runtimes      = ["python3.11"]
   compatible_architectures = ["x86_64"]
 
@@ -36,24 +28,16 @@ resource "aws_lambda_layer_version" "core_layer" {
     create_before_destroy = true
   }
 
-  depends_on = [data.archive_file.core_layer_zip]
-}
-
-# Heavy data layer with pandas, numpy, openpyxl
-data "archive_file" "heavy_data_layer_zip" {
-  type        = "zip"
-  source_file = "${path.root}/../lambda_functions/heavy_data_layer/heavy_data_layer.zip"
-  output_path = "${path.root}/../lambda_functions/heavy_data_layer_terraform.zip"
-
   depends_on = [null_resource.build_core_layer]
 }
 
+# Heavy data layer with pandas, numpy, openpyxl
 resource "aws_lambda_layer_version" "heavy_data_layer" {
   count = fileexists("${path.root}/../lambda_functions/heavy_data_layer/requirements.txt") ? 1 : 0
 
-  filename                 = data.archive_file.heavy_data_layer_zip.output_path
+  filename                 = "${path.root}/../lambda_functions/heavy_data_layer/heavy_data_layer.zip"
   layer_name               = "${var.project_name}-${var.environment}-heavy-data-layer"
-  source_code_hash         = data.archive_file.heavy_data_layer_zip.output_base64sha256
+  source_code_hash         = filebase64sha256("${path.root}/../lambda_functions/heavy_data_layer/heavy_data_layer.zip")
   compatible_runtimes      = ["python3.11"]
   compatible_architectures = ["x86_64"]
 
@@ -63,5 +47,5 @@ resource "aws_lambda_layer_version" "heavy_data_layer" {
     create_before_destroy = true
   }
 
-  depends_on = [data.archive_file.heavy_data_layer_zip]
+  depends_on = [null_resource.build_core_layer]
 }
