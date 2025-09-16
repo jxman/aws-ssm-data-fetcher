@@ -214,7 +214,6 @@ resource "aws_iam_policy" "github_actions_policy" {
           "states:DescribeExecution",
           "states:ListExecutions",
           "states:StopExecution",
-          "states:ValidateStateMachineDefinition",
           "states:TagResource",
           "states:UntagResource",
           "states:ListTagsForResource"
@@ -223,6 +222,14 @@ resource "aws_iam_policy" "github_actions_policy" {
           "arn:aws:states:*:*:stateMachine:${var.project_name}-*",
           "arn:aws:states:*:*:execution:${var.project_name}-*:*"
         ]
+      },
+      # Step Functions validation permission (requires * resource)
+      {
+        Effect = "Allow"
+        Action = [
+          "states:ValidateStateMachineDefinition"
+        ]
+        Resource = "*"
       },
       # SQS permissions for Dead Letter Queues
       {
