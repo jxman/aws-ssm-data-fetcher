@@ -2,7 +2,7 @@
 
 import time
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ..core.logging import get_logger
 from .aws_ssm_client import AWSSSMClient
@@ -111,7 +111,7 @@ class DataSourceManager:
                 max_retries=getattr(self.config, "max_retries", 3),
                 base_delay=getattr(self.config, "base_delay", 1.0),
             )
-        return self.ssm_client
+        return cast(AWSSSMClient, self.ssm_client)
 
     def get_rss_client(self) -> RSSClient:
         """Get or create RSS client."""
@@ -121,7 +121,7 @@ class DataSourceManager:
                 timeout=getattr(self.config, "rss_timeout", 30),
                 max_retries=getattr(self.config, "max_retries", 3),
             )
-        return self.rss_client
+        return cast(RSSClient, self.rss_client)
 
     def fetch_regions(
         self, strategy: DataSourceStrategy = DataSourceStrategy.AUTO
@@ -461,7 +461,7 @@ class DataSourceManager:
         self.logger.info(
             f"Using fallback regions ({len(self.fallback_regions)} regions)"
         )
-        return self.fallback_regions.copy()
+        return cast(List[str], self.fallback_regions.copy())
 
     def _get_fallback_services(self) -> List[str]:
         """Get fallback list of services when all sources fail."""
@@ -469,7 +469,7 @@ class DataSourceManager:
         self.logger.info(
             f"Using fallback services ({len(self.fallback_services)} services)"
         )
-        return self.fallback_services.copy()
+        return cast(List[str], self.fallback_services.copy())
 
     def _generate_region_display_name(self, region_code: str) -> str:
         """Generate a display name for a region code."""

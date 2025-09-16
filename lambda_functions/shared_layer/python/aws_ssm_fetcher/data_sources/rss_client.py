@@ -86,11 +86,7 @@ class RSSClient(DataSource):
                 total=self.max_retries,
                 backoff_factor=self.backoff_factor,
                 status_forcelist=[429, 500, 502, 503, 504],
-                allowed_methods=[
-                    "HEAD",
-                    "GET",
-                    "OPTIONS",
-                ],  # Updated from method_whitelist
+                method_whitelist=["HEAD", "GET", "OPTIONS"],
             )
 
             adapter = HTTPAdapter(max_retries=retry_strategy)
@@ -317,9 +313,9 @@ class RSSClient(DataSource):
             Dictionary with region_code, region_name, and launch_date or None if parsing fails
         """
         # Parse region code from title or description
-        # Example titles: "Asia Pacific (New Zealand) - ap-southeast-6", "US Gov East - us-gov-east-1"
+        # Example titles: "Asia Pacific (New Zealand) - ap-southeast-6"
         region_code_match = re.search(
-            r"([a-z]{2}(-[a-z]+)+-[0-9]{1,2})", title + " " + description
+            r"([a-z]{2}-[a-z]+-[0-9]{1,2})", title + " " + description
         )
 
         if not region_code_match:

@@ -1,27 +1,49 @@
 """Processing modules for AWS SSM data transformation and analysis."""
 
 from .base import BaseProcessor, ProcessingContext, ServiceMappingProcessor
-from .regional_validator_simple import (
+from .data_transformer import DataTransformationError, DataTransformer
+from .pipeline import (
+    PipelineError,
+    PipelineExecutionContext,
+    PipelineOrchestrator,
+    PipelineStage,
+    ProcessingPipeline,
+)
+from .regional_validator import (
+    RegionalDataValidator,
     RegionDiscoverer,
     RegionDiscoveryError,
     ServiceDiscoverer,
     ServiceDiscoveryError,
     ValidationError,
 )
-from .service_mapper import ServiceMapper
-
-# Note: Heavy dependency modules (data_transformer, statistics_analyzer, etc.)
-# are excluded from default imports to avoid pandas/numpy conflicts in Lambda environments.
-# Import them directly when needed with appropriate error handling.
+from .service_mapper import RegionalServiceMapper, ServiceMapper
+from .statistics_analyzer import (
+    AvailabilityZoneAnalyzer,
+    StatisticsAnalysisError,
+    StatisticsAnalyzer,
+)
 
 __all__ = [
     "BaseProcessor",
     "ProcessingContext",
     "ServiceMappingProcessor",
+    "ServiceMapper",
+    "RegionalServiceMapper",
+    "DataTransformer",
+    "DataTransformationError",
+    "StatisticsAnalyzer",
+    "AvailabilityZoneAnalyzer",
+    "StatisticsAnalysisError",
     "RegionDiscoverer",
     "ServiceDiscoverer",
-    "ServiceMapper",
+    "RegionalDataValidator",
     "ValidationError",
     "RegionDiscoveryError",
     "ServiceDiscoveryError",
+    "ProcessingPipeline",
+    "PipelineOrchestrator",
+    "PipelineExecutionContext",
+    "PipelineStage",
+    "PipelineError",
 ]
