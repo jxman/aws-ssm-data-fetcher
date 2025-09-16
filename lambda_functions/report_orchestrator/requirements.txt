@@ -1,9 +1,8 @@
-# Report Generator Lambda Function Dependencies
-# NO DEPENDENCIES - All dependencies come from layers
+# Report Orchestrator Lambda Function Dependencies
+# NO DEPENDENCIES - All dependencies come from core_layer
 
 # Dependencies provided by layers:
 # - core_layer: requests, feedparser, structlog, python-dateutil, urllib3
-# - heavy_data_layer: pandas, numpy, openpyxl, et-xmlfile
 # - AWS runtime: boto3, botocore
 
 # This file intentionally empty to keep function package minimal

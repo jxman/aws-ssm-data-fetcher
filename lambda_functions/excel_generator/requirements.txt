@@ -1,4 +1,4 @@
-# Report Generator Lambda Function Dependencies
+# Excel Generator Lambda Function Dependencies
 # NO DEPENDENCIES - All dependencies come from layers
 
 # Dependencies provided by layers:

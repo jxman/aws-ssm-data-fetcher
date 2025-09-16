@@ -1,9 +1,9 @@
 # Processor Lambda Function Dependencies
-# Only processor-specific lightweight dependencies
+# NO DEPENDENCIES - All dependencies come from layers
 
-# Note: Heavy dependencies (pandas, numpy, scipy) now come from heavy_deps_layer
-# Note: Lightweight dependencies come from shared_layer:
-# - python-dateutil, structlog
-# Note: boto3/botocore available in Lambda runtime
+# Dependencies provided by layers:
+# - core_layer: requests, feedparser, structlog, python-dateutil, urllib3
+# - heavy_data_layer: pandas, numpy, openpyxl
+# - AWS runtime: boto3, botocore
 
-# Currently no processor-specific dependencies beyond layers
+# This file intentionally empty to keep function package minimal

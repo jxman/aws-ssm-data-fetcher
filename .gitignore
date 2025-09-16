@@ -247,3 +247,6 @@ yarn-error.log*
 lambda_functions/excel_generator/openpyxl/
 lambda_functions/excel_generator/et_xmlfile/
 lambda_functions/shared_layer/shared_layer.zip
+# Large layer files - built during deployment
+lambda_functions/heavy_data_layer/heavy_data_layer.zip
+lambda_functions/core_layer/core_layer.zip
