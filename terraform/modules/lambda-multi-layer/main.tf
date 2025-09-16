@@ -1,11 +1,26 @@
 # Multi-Layer Lambda Architecture
 # This module creates two specialized layers to resolve size/dependency conflicts
 
+# Build script execution for core layer
+resource "null_resource" "build_core_layer" {
+  triggers = {
+    requirements_hash = filesha256("${path.root}/../lambda_functions/core_layer/requirements.txt")
+    modules_hash      = sha256(join("", [for f in fileset("${path.root}/../lambda_functions/core_layer/python", "**") : filesha256("${path.root}/../lambda_functions/core_layer/python/${f}")]))
+  }
+
+  provisioner "local-exec" {
+    working_dir = "${path.root}/../lambda_functions"
+    command     = "chmod +x scripts/build_multi_layer_packages.sh && ./scripts/build_multi_layer_packages.sh"
+  }
+}
+
 # Core layer with lightweight dependencies
 data "archive_file" "core_layer_zip" {
   type        = "zip"
-  source_dir  = "${path.root}/../lambda_functions/core_layer"
-  output_path = "${path.root}/../lambda_functions/core_layer.zip"
+  source_file = "${path.root}/../lambda_functions/core_layer/core_layer.zip"
+  output_path = "${path.root}/../lambda_functions/core_layer_terraform.zip"
+
+  depends_on = [null_resource.build_core_layer]
 }
 
 resource "aws_lambda_layer_version" "core_layer" {
@@ -27,11 +42,10 @@ resource "aws_lambda_layer_version" "core_layer" {
 # Heavy data layer with pandas, numpy, openpyxl
 data "archive_file" "heavy_data_layer_zip" {
   type        = "zip"
-  source_dir  = "${path.root}/../lambda_functions/heavy_data_layer"
-  output_path = "${path.root}/../lambda_functions/heavy_data_layer.zip"
+  source_file = "${path.root}/../lambda_functions/heavy_data_layer/heavy_data_layer.zip"
+  output_path = "${path.root}/../lambda_functions/heavy_data_layer_terraform.zip"
 
-  # Only create if heavy_data_layer directory exists and has requirements.txt
-  excludes = fileexists("${path.root}/../lambda_functions/heavy_data_layer/requirements.txt") ? [] : ["*"]
+  depends_on = [null_resource.build_core_layer]
 }
 
 resource "aws_lambda_layer_version" "heavy_data_layer" {
