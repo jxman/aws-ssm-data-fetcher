@@ -23,7 +23,7 @@ resource "aws_lambda_function" "main" {
   memory_size      = var.memory_size
   architectures    = ["x86_64"]
 
-  layers = var.lambda_layer_arn != "" ? [var.lambda_layer_arn] : []
+  layers = length(var.lambda_layer_arns) > 0 ? var.lambda_layer_arns : (var.lambda_layer_arn != "" ? [var.lambda_layer_arn] : [])
 
   environment {
     variables = var.environment_variables

@@ -66,24 +66,23 @@ module "iam" {
   s3_bucket_arn = module.s3_storage.bucket_arn
 }
 
-# Lambda shared layer
-module "lambda_layer" {
-  source = "./modules/lambda-layer"
+# Multi-layer Lambda architecture
+module "lambda_layers" {
+  source = "./modules/lambda-multi-layer"
 
   project_name = local.project_name
   environment  = var.environment
-  common_tags  = local.common_tags
 }
 
 # Lambda functions
 module "lambda_data_fetcher" {
   source = "./modules/lambda-function"
 
-  project_name     = local.project_name
-  environment      = var.environment
-  function_name    = "data-fetcher"
-  function_role    = module.iam.lambda_execution_role_arn
-  lambda_layer_arn = module.lambda_layer.layer_arn
+  project_name      = local.project_name
+  environment       = var.environment
+  function_name     = "data-fetcher"
+  function_role     = module.iam.lambda_execution_role_arn
+  lambda_layer_arns = module.lambda_layers.lightweight_function_layers
 
   source_path = "../lambda_functions/data_fetcher"
   handler     = "lambda_function.lambda_handler"
@@ -107,11 +106,11 @@ module "lambda_data_fetcher" {
 module "lambda_processor" {
   source = "./modules/lambda-function"
 
-  project_name     = local.project_name
-  environment      = var.environment
-  function_name    = "processor"
-  function_role    = module.iam.lambda_execution_role_arn
-  lambda_layer_arn = module.lambda_layer.layer_arn
+  project_name      = local.project_name
+  environment       = var.environment
+  function_name     = "processor"
+  function_role     = module.iam.lambda_execution_role_arn
+  lambda_layer_arns = module.lambda_layers.heavy_function_layers
 
   source_path = "../lambda_functions/processor"
   handler     = "lambda_function.lambda_handler"
@@ -135,11 +134,11 @@ module "lambda_processor" {
 module "lambda_json_csv_generator" {
   source = "./modules/lambda-function"
 
-  project_name     = local.project_name
-  environment      = var.environment
-  function_name    = "json-csv-generator"
-  function_role    = module.iam.lambda_execution_role_arn
-  lambda_layer_arn = module.lambda_layer.layer_arn
+  project_name      = local.project_name
+  environment       = var.environment
+  function_name     = "json-csv-generator"
+  function_role     = module.iam.lambda_execution_role_arn
+  lambda_layer_arns = module.lambda_layers.lightweight_function_layers
 
   source_path = "../lambda_functions/json_csv_generator"
   handler     = "lambda_function.lambda_handler"
@@ -162,11 +161,11 @@ module "lambda_json_csv_generator" {
 module "lambda_excel_generator" {
   source = "./modules/lambda-function"
 
-  project_name     = local.project_name
-  environment      = var.environment
-  function_name    = "excel-generator"
-  function_role    = module.iam.lambda_execution_role_arn
-  lambda_layer_arn = module.lambda_layer.layer_arn
+  project_name      = local.project_name
+  environment       = var.environment
+  function_name     = "excel-generator"
+  function_role     = module.iam.lambda_execution_role_arn
+  lambda_layer_arns = module.lambda_layers.heavy_function_layers
 
   source_path = "../lambda_functions/excel_generator"
   handler     = "lambda_function.lambda_handler"
@@ -189,11 +188,11 @@ module "lambda_excel_generator" {
 module "lambda_report_orchestrator" {
   source = "./modules/lambda-function"
 
-  project_name     = local.project_name
-  environment      = var.environment
-  function_name    = "report-orchestrator"
-  function_role    = module.iam.lambda_execution_role_arn
-  lambda_layer_arn = module.lambda_layer.layer_arn
+  project_name      = local.project_name
+  environment       = var.environment
+  function_name     = "report-orchestrator"
+  function_role     = module.iam.lambda_execution_role_arn
+  lambda_layer_arns = module.lambda_layers.lightweight_function_layers
 
   source_path = "../lambda_functions/report_orchestrator"
   handler     = "lambda_function.lambda_handler"

@@ -19,9 +19,15 @@ variable "function_role" {
 }
 
 variable "lambda_layer_arn" {
-  description = "ARN of the Lambda layer"
+  description = "ARN of the Lambda layer (deprecated - use lambda_layer_arns)"
   type        = string
   default     = ""
+}
+
+variable "lambda_layer_arns" {
+  description = "List of Lambda layer ARNs"
+  type        = list(string)
+  default     = []
 }
 
 variable "source_path" {
