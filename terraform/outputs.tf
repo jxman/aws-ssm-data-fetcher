@@ -33,9 +33,19 @@ output "lambda_report_orchestrator_arn" {
   value       = module.lambda_report_orchestrator.function_arn
 }
 
+output "lambda_core_layer_arn" {
+  description = "ARN of the core Lambda layer"
+  value       = module.lambda_layers.core_layer_arn
+}
+
+output "lambda_heavy_data_layer_arn" {
+  description = "ARN of the heavy data Lambda layer"
+  value       = module.lambda_layers.heavy_data_layer_arn
+}
+
 output "lambda_layer_arn" {
-  description = "ARN of the shared Lambda layer"
-  value       = module.lambda_layer.layer_arn
+  description = "ARN of the core Lambda layer (backward compatibility)"
+  value       = module.lambda_layers.core_layer_arn
 }
 
 output "step_function_arn" {
