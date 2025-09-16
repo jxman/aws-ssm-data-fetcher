@@ -30,3 +30,8 @@ variable "enabled" {
   type        = bool
   default     = true
 }
+
+variable "events_role_arn" {
+  description = "ARN of the IAM role for EventBridge to invoke Step Functions"
+  type        = string
+}

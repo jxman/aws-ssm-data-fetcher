@@ -23,7 +23,7 @@ output "lambda_duration_alarms" {
   value       = aws_cloudwatch_metric_alarm.lambda_duration[*].alarm_name
 }
 
-output "step_function_failure_alarm" {
-  description = "Name of Step Functions failure alarm"
-  value       = var.step_function_arn != "" ? aws_cloudwatch_metric_alarm.step_function_failures[0].alarm_name : null
-}
+# output "step_function_failure_alarm" {
+#   description = "Name of Step Functions failure alarm"
+#   value       = var.step_function_arn != "" ? aws_cloudwatch_metric_alarm.step_function_failures[0].alarm_name : null
+# }

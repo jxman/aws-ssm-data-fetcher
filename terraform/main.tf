@@ -259,6 +259,7 @@ module "eventbridge" {
   project_name      = local.project_name
   environment       = var.environment
   step_function_arn = module.step_functions.state_machine_arn
+  events_role_arn   = module.iam.events_role_arn
   common_tags       = local.common_tags
 
   # Schedule: Daily at 6 AM UTC (can be customized via variables)

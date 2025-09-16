@@ -178,27 +178,29 @@ resource "aws_cloudwatch_metric_alarm" "lambda_duration" {
 }
 
 # CloudWatch Alarm for Step Functions
-resource "aws_cloudwatch_metric_alarm" "step_function_failures" {
-  count               = var.step_function_arn != "" ? 1 : 0
-  alarm_name          = "${var.project_name}-${var.environment}-step-function-failures"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "1"
-  metric_name         = "ExecutionsFailed"
-  namespace           = "AWS/States"
-  period              = "300"
-  statistic           = "Sum"
-  threshold           = "0"
-  alarm_description   = "This metric monitors step function execution failures"
-  alarm_actions       = var.enable_sns_notifications ? [aws_sns_topic.alarms[0].arn] : []
+# Note: Temporarily disabled due to circular dependency with step_function_arn
+# This alarm will be created separately after Step Functions are deployed
+# resource "aws_cloudwatch_metric_alarm" "step_function_failures" {
+#   count               = var.step_function_arn != "" ? 1 : 0
+#   alarm_name          = "${var.project_name}-${var.environment}-step-function-failures"
+#   comparison_operator = "GreaterThanThreshold"
+#   evaluation_periods  = "1"
+#   metric_name         = "ExecutionsFailed"
+#   namespace           = "AWS/States"
+#   period              = "300"
+#   statistic           = "Sum"
+#   threshold           = "0"
+#   alarm_description   = "This metric monitors step function execution failures"
+#   alarm_actions       = var.enable_sns_notifications ? [aws_sns_topic.alarms[0].arn] : []
 
-  dimensions = {
-    StateMachineArn = var.step_function_arn
-  }
+#   dimensions = {
+#     StateMachineArn = var.step_function_arn
+#   }
 
-  tags = merge(var.common_tags, {
-    Name = "${var.project_name}-${var.environment}-step-function-failures-alarm"
-  })
-}
+#   tags = merge(var.common_tags, {
+#     Name = "${var.project_name}-${var.environment}-step-function-failures-alarm"
+#   })
+# }
 
 # SNS Topic for alarms (optional)
 resource "aws_sns_topic" "alarms" {
