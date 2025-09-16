@@ -162,8 +162,14 @@ build_lightweight_function() {
     rm -rf "$build_dir"
     mkdir -p "$build_dir"
 
-    # Copy function code only (no dependencies - they come from layers)
+    # Copy function code and application modules
     cp "$function_dir/lambda_function.py" "$build_dir/"
+
+    # Copy aws_ssm_fetcher modules to each function package
+    if [ -d "$LAMBDA_DIR/core_layer/python/aws_ssm_fetcher" ]; then
+        cp -r "$LAMBDA_DIR/core_layer/python/aws_ssm_fetcher" "$build_dir/"
+        echo "   ✅ Copied aws_ssm_fetcher modules"
+    fi
 
     # Create deployment package
     local package_file="$function_dir/deployment_package.zip"
