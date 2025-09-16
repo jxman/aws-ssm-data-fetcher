@@ -27,15 +27,16 @@ The AWS SSM Data Fetcher is a production-ready serverless application that autom
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │Report Orchestr. │◀───│  Excel Gen      │◀───│  Shared Layer   │
 │ • Coordination  │    │ • Excel (5 tabs)│    │ (requests, core)│
-│ • Final upload  │    │ • openpyxl only │    │     ~34MB       │
+│ • Final upload  │    │ • openpyxl only │    │     ~17MB       │
 │    2.6KB        │    │     259KB       │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
-🎯 **Modular Architecture Benefits:**
-- **5 Specialized Functions**: Each optimized for specific task (99.5% size reduction)
-- **Parallel Execution**: JSON/CSV and Excel generation can run concurrently
-- **Isolated Failures**: Individual retry logic and error handling per function
-- **Right-Sized Resources**: Memory allocation optimized per function type
+🎯 **Modular Architecture Benefits (Recently Enhanced):**
+- **5 Specialized Functions**: Each optimized for specific task with GitHub Actions compatibility
+- **Package Size Optimization**: Shared layer reduced from 66MB to 17MB for CI/CD reliability
+- **Linux Compatibility**: Removed macOS-specific libraries for proper Lambda execution
+- **Deployment Reliability**: Fixed IAM permissions and Terraform state conflicts
+- **CI/CD Integration**: Complete automation through GitHub Actions workflows
 - **Enhanced Monitoring**: Detailed CloudWatch metrics for each stage
 
            ┌─────────────────────────────────────────┐
@@ -106,6 +107,47 @@ open "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards
 
 # Monitor logs
 aws logs tail /aws/lambda/aws-ssm-fetcher-prod-data-fetcher --follow
+```
+
+## 🔧 Deployment Troubleshooting (Recently Resolved)
+
+### **Common Issues and Solutions**
+
+The following deployment issues have been identified and **resolved** in the current version:
+
+#### ❌ **GitHub File Size Limit (RESOLVED)**
+**Previous Issue**: `shared_layer.zip` exceeded GitHub's 50MB file size limit (was 66MB)
+**Solution Applied**:
+- Optimized shared layer to 17MB by removing nested zip files and macOS-specific libraries
+- Implemented Linux-compatible dependencies for AWS Lambda environment
+- ✅ **Status**: All packages now deploy successfully via GitHub Actions
+
+#### ❌ **IAM Permission Errors (RESOLVED)**
+**Previous Issues**: Missing Step Functions permissions
+- `AccessDeniedException: states:ValidateStateMachineDefinition`
+- `AccessDeniedException: states:ListStateMachineVersions`
+
+**Solution Applied**:
+- Added missing permissions to GitHub Actions OIDC IAM policy (version v12)
+- ✅ **Status**: All Step Functions operations now authorized
+
+#### ❌ **Terraform State Conflicts (RESOLVED)**
+**Previous Issue**: Resources existed in AWS but not in Terraform state
+**Solution Applied**:
+- Imported existing Step Functions state machine and EventBridge resources
+- ✅ **Status**: Terraform state synchronized with AWS resources
+
+### **Verification Commands**
+```bash
+# Verify deployment succeeded
+gh run list --limit 3
+
+# Check latest successful deployment
+gh run view [LATEST_RUN_ID]
+
+# Verify AWS resources are accessible
+aws stepfunctions list-state-machines | grep aws-ssm-fetcher-prod
+aws lambda list-functions | grep aws-ssm-fetcher-prod
 ```
 
 ### Download Reports

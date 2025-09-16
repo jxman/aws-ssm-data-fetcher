@@ -41,22 +41,23 @@ A complete modular Python package for fetching AWS service and region data from 
 │   Data Fetcher  │───▶│   Processor     │───▶│  JSON-CSV Gen   │
 │  (38 Regions +  │    │ (Transform &    │    │ • JSON reports  │
 │   396 Services) │    │   Analyze Data) │    │ • 5 CSV files   │
-│     ~14MB       │    │     ~49MB       │    │    3.2KB        │
+│     ~15MB       │    │     ~50MB       │    │    ~259KB       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                                          │
                                                          ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │Report Orchestr. │◀───│  Excel Gen      │◀───│  Shared Layer   │
-│ • Coordination  │    │ • Excel (5 tabs)│    │ (requests, core)│
-│ • Final upload  │    │ • openpyxl only │    │     ~34MB       │
-│    2.6KB        │    │     259KB       │    │                 │
+│ • Coordination  │    │ • Excel (5 tabs)│    │ • pandas, numpy │
+│ • Final upload  │    │ • openpyxl only │    │ • boto3, pytz   │
+│    ~3MB         │    │     ~259KB      │    │     ~17MB       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
-**🎯 Key Improvements:**
-- **99.5% Size Reduction**: From 51MB single function to 265KB total across 3 functions
-- **Modular Design**: Each function optimized for specific task
-- **Better Reliability**: Isolated failure points with individual retry logic
-- **Cost Optimization**: Right-sized memory allocation per function
+**🎯 Key Improvements (Recently Enhanced):**
+- **GitHub Size Compliance**: All packages under GitHub's 50MB limit (shared layer optimized from 66MB to 17MB)
+- **Linux Compatibility**: Removed macOS-specific libraries and nested zip files
+- **Deployment Reliability**: Fixed IAM permissions for Step Functions operations
+- **State Management**: Resolved Terraform conflicts by importing existing AWS resources
+- **CI/CD Optimized**: GitHub Actions deployments now fully operational
 ```
 
 **📋 Production-Ready Infrastructure:**
@@ -250,14 +251,21 @@ aws cloudwatch get-dashboard --dashboard-name aws-ssm-fetcher-dev-dashboard
 ```
 
 ### **Lambda Package Integration**
-All packages automatically deployed via Terraform:
+All packages automatically deployed via Terraform (Recently Optimized):
 
 ```bash
-📦 Lambda Deployment Packages:
-   🗂️  shared_layer.zip                     (324KB)
-   📦 data_fetcher/deployment_package.zip    (14.7MB)
-   📦 processor/deployment_package.zip       (49.8MB)
-   📦 report_generator/deployment_package.zip (16.3MB)
+📦 Lambda Deployment Packages (✅ GitHub Size Compliant):
+   🗂️  shared_layer.zip                     (~17MB)   ← Optimized from 66MB
+   📦 data_fetcher.zip                      (~15MB)
+   📦 processor.zip                         (~50MB)   ← At GitHub limit
+   📦 json_csv_generator.zip                (~259KB)
+   📦 excel_generator.zip                   (~259KB)
+   📦 report_orchestrator.zip               (~3MB)
+
+**🔧 Optimization Highlights:**
+- Removed nested zip files and macOS-specific libraries
+- Linux-compatible dependencies for AWS Lambda environment
+- All packages now deploy successfully via GitHub Actions
 ```
 
 ## Development Workflow
@@ -342,6 +350,16 @@ docs/
 See [docs/README.md](docs/README.md) for complete documentation index.
 
 ## 🛠️ Recent Major Improvements (September 2025)
+
+### **🚀 GitHub Actions Deployment Resolution** (Latest)
+**Problem**: GitHub Actions deployments failing due to file size limits and IAM permission issues.
+**Solution**: Comprehensive deployment pipeline optimization and permission fixes.
+**Results**:
+- ✅ **File Size Compliance**: Optimized shared_layer.zip from 66MB to 17MB (under GitHub's 50MB limit)
+- ✅ **IAM Permission Fixes**: Added missing Step Functions permissions (`states:ValidateStateMachineDefinition`, `states:ListStateMachineVersions`)
+- ✅ **State Management**: Imported existing AWS resources to resolve Terraform conflicts
+- ✅ **CI/CD Operational**: GitHub Actions workflows now deploy successfully
+- ✅ **Production Ready**: Complete automation from code commit to AWS deployment
 
 ### **✅ Service Matrix Logic Fixed**
 **Problem**: Service Matrix was incorrectly showing all services available in all regions.

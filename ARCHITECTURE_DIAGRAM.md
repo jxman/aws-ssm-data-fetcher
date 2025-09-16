@@ -99,7 +99,8 @@ This system is a serverless AWS infrastructure designed to collect, process, and
 #### 4. **Lambda Shared Layer**
 - **Purpose**: Common dependencies for all Lambda functions
 - **Libraries**: pandas, numpy, openpyxl, pytz, boto3
-- **Benefits**: Reduced deployment package size, consistent versions
+- **Size**: ~17MB (optimized from 66MB for GitHub Actions compatibility)
+- **Benefits**: Reduced deployment package size, consistent versions, Linux-compatible dependencies
 
 #### 5. **S3 Bucket**
 - **Purpose**: Centralized data and report storage
@@ -183,6 +184,15 @@ The infrastructure is deployed using:
 - **GitHub Actions**: CI/CD pipeline with OIDC authentication
 - **Modular Design**: Reusable Terraform modules for each component
 - **Environment Isolation**: Separate configurations for dev/staging/prod
+
+### **Recent Deployment Optimizations**
+
+**GitHub Actions Compatibility**:
+- **Package Size Optimization**: Reduced shared layer from 66MB to 17MB to meet GitHub's 50MB file size limit
+- **Linux Dependency Compatibility**: Removed macOS-specific libraries and nested zip files
+- **IAM Permission Resolution**: Added missing Step Functions permissions for complete automation
+- **State Management**: Imported existing AWS resources to resolve Terraform state conflicts
+- **Automated Deployment**: Full CI/CD pipeline from code commit to AWS infrastructure
 
 ## Cost Optimization
 
