@@ -223,7 +223,7 @@ resource "aws_iam_policy" "github_actions_policy" {
           "arn:aws:states:*:*:execution:${var.project_name}-*:*"
         ]
       },
-      # Step Functions validation permission (requires * resource)
+      # Step Functions validation permission (requires * resource - updated for GitHub Actions)
       {
         Effect = "Allow"
         Action = [
