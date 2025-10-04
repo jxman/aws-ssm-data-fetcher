@@ -85,6 +85,14 @@ jobs:
         pip install -r requirements.txt
         echo "✅ Python dependencies installed successfully"
 
+    - name: 🔍 Type Check with MyPy
+      run: |
+        echo "🔍 Running MyPy type checking..."
+        cd ../
+        echo "📋 Checking aws_ssm_fetcher module..."
+        mypy aws_ssm_fetcher --ignore-missing-imports
+        echo "✅ Type checking completed successfully"
+
     - name: 🏗️ Build Lambda Packages
       run: |
         echo "🏗️ Building Lambda deployment packages..."
