@@ -1,8 +1,8 @@
-# Create zip file for shared layer
+# Use existing shared layer zip
 data "archive_file" "layer_zip" {
   type        = "zip"
   source_dir  = "${path.root}/../lambda_functions/shared_layer"
-  output_path = "${path.root}/../lambda_functions/shared_layer.zip"
+  output_path = "${path.root}/../lambda_functions/shared_layer/layer.zip"
 }
 
 # Lambda layer for shared modules

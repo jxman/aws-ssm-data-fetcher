@@ -1,4 +1,4 @@
-name: 'Terraform Deployment'
+name: '🚀 Terraform Deployment'
 
 # 🚀 Terraform Deployment Workflow
 #
@@ -52,7 +52,7 @@ env:
 
 jobs:
   terraform:
-    name: "Terraform ${{ github.event.inputs.action || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'apply') || 'plan' }}"
+    name: "🚀 Terraform ${{ github.event.inputs.action || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'apply') || 'plan' }}"
     runs-on: ubuntu-latest
     environment: prod
 
@@ -62,35 +62,38 @@ jobs:
         working-directory: ./terraform
 
     steps:
-    - name: Checkout
+    - name: 📥 Checkout Code
       uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
+    - name: 🔐 Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
         role-session-name: GitHubActions-TerraformDeployment
 
-    - name: Setup Python
+    - name: 🐍 Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
 
-    - name: Install Python Dependencies
+    - name: 📚 Install Python Dependencies
       run: |
+        echo "📦 Installing Python dependencies..."
         cd ../
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        echo "✅ Python dependencies installed successfully"
 
-    - name: Build Lambda Packages
+    - name: 🏗️ Build Lambda Packages
       run: |
+        echo "🏗️ Building Lambda deployment packages..."
         cd ../lambda_functions
         chmod +x scripts/build_packages.sh
         ./scripts/build_packages.sh
-        echo "📦 Lambda packages built successfully"
+        echo "✅ Lambda packages built successfully"
 
-    - name: Verify Lambda Packages
+    - name: 🔍 Verify Lambda Packages
       run: |
         cd ../lambda_functions
         echo "🔍 Verifying Lambda package sizes..."
@@ -98,7 +101,7 @@ jobs:
           if [ -f "$package" ]; then
             size=$(stat -f%z "$package" 2>/dev/null || stat -c%s "$package" 2>/dev/null)
             size_mb=$((size / 1024 / 1024))
-            echo "  ✅ $package: ${size_mb}MB"
+            echo "  📦 $package: ${size_mb}MB"
             if [ $size_mb -gt 50 ]; then
               echo "  ❌ Package $package exceeds 50MB limit (${size_mb}MB)"
               exit 1
@@ -107,44 +110,57 @@ jobs:
         done
         echo "✅ All packages within AWS Lambda limits"
 
-    - name: Setup Terraform
+    - name: ⚡ Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ${{ env.TF_VERSION }}
         terraform_wrapper: true
 
-    - name: Set Environment
+    - name: 🌍 Set Environment
       id: env
       run: |
+        echo "🌍 Setting environment to production"
         echo "environment=prod" >> $GITHUB_OUTPUT
 
-    - name: Determine Action
+    - name: 🎯 Determine Action
       id: action
       run: |
+        echo "🎯 Determining Terraform action..."
         if [ "${{ github.event.inputs.action }}" != "" ]; then
+          echo "▶️ Manual action: ${{ github.event.inputs.action }}"
           echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
         elif [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          echo "▶️ Auto-deploy on main branch: apply"
           echo "action=apply" >> $GITHUB_OUTPUT
         else
+          echo "▶️ Default action: plan"
           echo "action=plan" >> $GITHUB_OUTPUT
         fi
 
-    - name: Terraform Format Check
+    - name: 🎨 Terraform Format Check
       id: fmt
-      run: terraform fmt -check=true -diff=true -recursive
+      run: |
+        echo "🎨 Checking Terraform code formatting..."
+        terraform fmt -check=true -diff=true -recursive
+        echo "✅ Terraform code is properly formatted"
 
-    - name: Terraform Init
+    - name: 🔧 Terraform Init
       id: init
       run: |
+        echo "🔧 Initializing Terraform..."
         terraform init \
           -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
           -backend-config="key=aws-ssm-fetcher/prod/terraform.tfstate" \
           -backend-config="region=${{ env.AWS_REGION }}" \
           -backend-config="encrypt=true"
+        echo "✅ Terraform initialized successfully"
 
-    - name: Terraform Validate
+    - name: ✅ Terraform Validate
       id: validate
-      run: terraform validate
+      run: |
+        echo "✅ Validating Terraform configuration..."
+        terraform validate
+        echo "🎉 Terraform configuration is valid"
 
     # - name: Terraform Security Scan
     #   uses: aquasecurity/tfsec-action@v1.0.3
@@ -153,7 +169,7 @@ jobs:
     #     soft_fail: true
     # Temporarily disabled due to GitHub API rate limiting issues
 
-    - name: Terraform Plan
+    - name: 📋 Terraform Plan
       id: plan
       run: |
         # Using hashicorp/setup-terraform with terraform_wrapper: true
@@ -162,30 +178,34 @@ jobs:
         # - steps.plan.outputs.stdout (plan output)
         # - steps.plan.outputs.stderr (error output)
 
-        echo "🔍 Running Terraform plan..."
+        echo "📋 Running Terraform plan..."
         terraform plan \
           -out=tfplan-prod \
           -detailed-exitcode
 
-    - name: Terraform Plan Summary
+    - name: 📊 Terraform Plan Summary
       run: |
         # Using official hashicorp/setup-terraform action outputs
         EXIT_CODE="${{ steps.plan.outputs.exitcode }}"
 
-        echo "📋 Terraform Plan Results:"
+        echo "📊 Terraform Plan Results:"
         case $EXIT_CODE in
           0)
             echo "✅ No changes needed - infrastructure is up to date"
+            echo "🏆 Current infrastructure matches desired state"
             ;;
           1)
             echo "❌ Plan failed with errors - see output above for details"
+            echo "🔧 Please review and fix the errors before proceeding"
             ;;
           2)
             echo "✅ Changes detected and plan created successfully"
             echo "🔄 Ready to apply when approved"
+            echo "📦 New resources will be created or updated"
             ;;
           *)
             echo "⚠️ Unexpected exit code: $EXIT_CODE"
+            echo "🤔 This should not happen - please investigate"
             ;;
         esac
 
@@ -201,10 +221,10 @@ jobs:
           const planStatus = exitCode === '0' ? 'No Changes' : exitCode === '2' ? 'Changes Detected' : 'Failed';
           const statusIcon = exitCode === '1' ? '❌' : '✅';
 
-          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-          #### Terraform Plan 📖${statusIcon} \`${planStatus}\`
+          const output = `#### 🎨 Terraform Format and Style \`${{ steps.fmt.outcome }}\`
+          #### 🔧 Terraform Initialization \`${{ steps.init.outcome }}\`
+          #### ✅ Terraform Validation \`${{ steps.validate.outcome }}\`
+          #### 📋 Terraform Plan ${statusIcon} \`${planStatus}\`
 
           <details><summary>Show Plan</summary>
 
@@ -223,48 +243,63 @@ jobs:
             body: output
           })
 
-    - name: Terraform Plan Status
+    - name: 🚨 Terraform Plan Status
       if: steps.plan.outputs.exitcode == '1'
       run: |
-        echo "❌ Terraform plan failed with actual error (exit code 1)"
+        echo "🚨 Terraform plan failed with actual error (exit code 1)"
         echo "💡 Exit code 1 indicates a real Terraform error that needs to be resolved"
         echo "🔍 Check the plan output above for detailed error information"
+        echo "🛠️ Common issues: syntax errors, missing resources, or permission problems"
         exit 1
 
-    - name: Terraform Apply
+    - name: 🚀 Terraform Apply
       if: steps.action.outputs.action == 'apply' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && (steps.plan.outputs.exitcode == '0' || steps.plan.outputs.exitcode == '2')
       run: |
+        echo "🚀 Applying Terraform changes..."
+        echo "⏳ This may take several minutes..."
         terraform apply \
           -auto-approve \
           tfplan-prod
 
-        echo "🚀 Infrastructure deployed successfully!"
+        echo ""
+        echo "🎉 Infrastructure deployed successfully!"
+        echo ""
         echo "📊 Terraform Outputs:"
+        echo "════════════════════════"
         terraform output
+        echo "════════════════════════"
+        echo ""
+        echo "✨ Deployment completed at $(date)"
+        echo "🚀 Ready for production use!"
 
-    - name: Terraform Destroy
+    - name: 🗑️ Terraform Destroy
       if: steps.action.outputs.action == 'destroy' && github.event_name == 'workflow_dispatch'
       run: |
+        echo "🗑️ Destroying infrastructure..."
+        echo "⚠️ This action is irreversible!"
         terraform destroy \
           -auto-approve
-        echo "🗑️ Infrastructure destroyed successfully!"
+        echo "💥 Infrastructure destroyed successfully!"
+        echo "🧹 All resources have been cleaned up"
 
-    - name: Test Infrastructure
+    - name: 🧪 Test Infrastructure
       if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.exitcode == '0' || steps.plan.outputs.exitcode == '2')
       run: |
         echo "🧪 Testing deployed infrastructure..."
+        echo "🔍 Running post-deployment health checks..."
 
         # Get outputs
         STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn)
         S3_BUCKET=$(terraform output -raw s3_bucket_name)
 
-        echo "Step Function ARN: $STEP_FUNCTION_ARN"
-        echo "S3 Bucket: $S3_BUCKET"
+        echo "📝 Infrastructure Details:"
+        echo "  ⚙️ Step Function ARN: $STEP_FUNCTION_ARN"
+        echo "  📦 S3 Bucket: $S3_BUCKET"
 
         # Test core infrastructure
         echo "📊 Testing S3 bucket access..."
         aws s3 ls s3://$S3_BUCKET > /dev/null
-        echo "✅ S3 bucket accessible"
+        echo "✅ S3 bucket accessible and responding"
 
         # Test Step Function execution only if Step Functions are deployed
         if [ -n "$STEP_FUNCTION_ARN" ] && [ "$STEP_FUNCTION_ARN" != "" ]; then
@@ -274,39 +309,45 @@ jobs:
             --input '{"test": true, "source": "github-actions"}' \
             --query 'executionArn' --output text)
 
-          echo "Started test execution: $EXECUTION_ARN"
+          echo "🏁 Started test execution: $EXECUTION_ARN"
 
           # Wait a bit and check status
+          echo "⏳ Waiting 30 seconds for execution to complete..."
           sleep 30
           STATUS=$(aws stepfunctions describe-execution \
             --execution-arn "$EXECUTION_ARN" \
             --query 'status' --output text)
 
-          echo "Execution status: $STATUS"
+          echo "📊 Execution status: $STATUS"
 
           if [ "$STATUS" = "SUCCEEDED" ]; then
-            echo "✅ Step Function test passed!"
+            echo "✅ Step Function test passed! Pipeline is working correctly."
           elif [ "$STATUS" = "RUNNING" ]; then
             echo "⏳ Step Function execution still running - appears healthy"
+            echo "🚀 Long-running executions are normal for data processing pipelines"
           else
             echo "❌ Step Function test failed with status: $STATUS"
+            echo "🔧 Check CloudWatch logs for detailed error information"
             exit 1
           fi
         else
           echo "ℹ️  Step Functions are disabled - skipping Step Function tests"
         fi
 
-        echo "✅ Infrastructure test completed successfully!"
+        echo "🎉 Infrastructure test completed successfully!"
+        echo "✨ All health checks passed - deployment is ready for production use"
 
-    - name: Deployment Summary
+    - name: 📝 Deployment Summary
       if: steps.action.outputs.action == 'apply' && (steps.plan.outputs.exitcode == '0' || steps.plan.outputs.exitcode == '2')
       run: |
-        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## 🎉 Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
-        echo "- **AWS Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Terraform Version**: ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Status**: Deployment completed successfully" >> $GITHUB_STEP_SUMMARY
+        echo "🌍 **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+        echo "🗺️ **AWS Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+        echo "⚡ **Terraform Version**: ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "⏰ **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "👤 **Deployed By**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📊 Infrastructure Outputs" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -317,4 +358,13 @@ jobs:
         echo "### 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         DASHBOARD_URL=$(terraform output -raw cloudwatch_dashboard_url)
-        echo "- [CloudWatch Dashboard]($DASHBOARD_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "- 📊 [CloudWatch Dashboard]($DASHBOARD_URL)" >> $GITHUB_STEP_SUMMARY
+        S3_BUCKET=$(terraform output -raw s3_bucket_name)
+        echo "- 📦 [S3 Bucket](https://s3.console.aws.amazon.com/s3/buckets/$S3_BUCKET)" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔍 [Step Functions Console](https://console.aws.amazon.com/states/home?region=${{ env.AWS_REGION }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🏆 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- 📊 Monitor the CloudWatch dashboard for system health" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔄 Step Functions will run automatically on schedule" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 Check S3 bucket for generated reports" >> $GITHUB_STEP_SUMMARY
