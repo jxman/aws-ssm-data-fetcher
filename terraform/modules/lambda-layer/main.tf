@@ -1,8 +1,8 @@
-# Use existing shared layer zip
+# Use pre-built shared layer zip (built by build_packages.sh)
 data "archive_file" "layer_zip" {
   type        = "zip"
-  source_dir  = "${path.root}/../lambda_functions/shared_layer"
-  output_path = "${path.root}/../lambda_functions/shared_layer/layer.zip"
+  source_file = "${path.root}/../lambda_functions/shared_layer/layer.zip"
+  output_path = "${path.root}/../lambda_functions/shared_layer_terraform.zip"
 }
 
 # Lambda layer for shared modules
