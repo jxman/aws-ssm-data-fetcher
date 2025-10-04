@@ -247,6 +247,38 @@ yarn-error.log*
 lambda_functions/excel_generator/openpyxl/
 lambda_functions/excel_generator/et_xmlfile/
 lambda_functions/shared_layer/shared_layer.zip
-# Large layer files - built during deployment
-lambda_functions/heavy_data_layer/heavy_data_layer.zip
-lambda_functions/core_layer/core_layer.zip
+# Build artifacts - automatically generated during CI/CD and local builds
+# These files are created by build scripts and should not be committed
+
+# Lambda deployment packages (lightweight and full)
+lambda_functions/**/deployment_package.zip
+lambda_functions/**/*deployment*.zip
+
+# Layer archives (all types)
+lambda_functions/**/layer.zip
+lambda_functions/**/*layer*.zip
+lambda_functions/**/core_layer.zip
+lambda_functions/**/heavy_data_layer.zip
+lambda_functions/**/shared_layer.zip
+
+# Terraform-specific build artifacts
+lambda_functions/**/*terraform*.zip
+lambda_functions/**/*_terraform.zip
+
+# Build directories and temporary artifacts
+lambda_functions/**/build/
+lambda_functions/**/temp_env/
+lambda_functions/**/.build/
+
+# Old package formats (pre-simplified architecture)
+lambda_functions/data_fetcher.zip
+lambda_functions/processor.zip
+lambda_functions/excel_generator.zip
+lambda_functions/json_csv_generator.zip
+lambda_functions/report_orchestrator.zip
+lambda_functions/report_generator.zip
+
+# Exception: Keep requirements.txt and source code
+!lambda_functions/**/requirements.txt
+!lambda_functions/**/lambda_function.py
+!lambda_functions/**/README.md
