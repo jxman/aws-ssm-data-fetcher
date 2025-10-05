@@ -52,6 +52,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         # Import our modules from the shared layer
         from aws_ssm_fetcher.core.cache import CacheManager
         from aws_ssm_fetcher.core.config import Config
+        from aws_ssm_fetcher.data_sources.aws_ssm_client import AWSSSMClient
         from aws_ssm_fetcher.data_sources.rss_client import RSSClient
         from aws_ssm_fetcher.processors import RegionDiscoverer, ServiceDiscoverer
         from aws_ssm_fetcher.processors.base import ProcessingContext
@@ -63,6 +64,16 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         # Initialize cache manager with S3 backend
         cache_manager = CacheManager(lambda_config)
 
+        # Create AWS session for SSM client
+        aws_session = boto3.Session(region_name=config["aws_region"])
+
+        # Initialize SSM client
+        ssm_client = AWSSSMClient(
+            aws_session=aws_session,
+            cache_manager=cache_manager,
+            region=config["aws_region"],
+        )
+
         # Create processing context for data discoverers
         processing_context = ProcessingContext(
             config=lambda_config,
@@ -70,6 +81,9 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             logger_name="data_fetcher",
             metadata={"execution_id": execution_id},
         )
+
+        # Add SSM client to processing context
+        processing_context.ssm_client = ssm_client
 
         # Initialize data discoverers with proper context
         region_discoverer = RegionDiscoverer(processing_context)

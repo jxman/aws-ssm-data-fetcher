@@ -3,14 +3,14 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import pandas as pd
-
 from .base import (
     BaseProcessor,
     ProcessingContext,
     ProcessingError,
     ProcessingValidationError,
 )
+
+# import pandas as pd  # Disabled - will handle pandas-dependent functionality separately
 
 
 class DataTransformationError(ProcessingError):
