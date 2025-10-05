@@ -211,7 +211,11 @@ def test_mock_execution(package_path: str, function_name: str) -> bool:
                 import lambda_function
 
                 # Create mock event and context (function-specific parameters)
-                if function_name == "report_generator":
+                if function_name in [
+                    "json_csv_generator",
+                    "excel_generator",
+                    "report_orchestrator",
+                ]:
                     mock_event = {
                         "execution_id": "test_execution_123",
                         "source": "test",
@@ -331,10 +335,20 @@ def main():
             "expected_files": ["lambda_function.py"],
             "dependencies": ["boto3", "pandas", "numpy"],
         },
-        "report_generator": {
-            "path": lambda_dir / "report_generator" / "deployment_package.zip",
+        "json_csv_generator": {
+            "path": lambda_dir / "json_csv_generator" / "deployment_package.zip",
+            "expected_files": ["lambda_function.py"],
+            "dependencies": ["boto3", "pandas"],
+        },
+        "excel_generator": {
+            "path": lambda_dir / "excel_generator" / "deployment_package.zip",
             "expected_files": ["lambda_function.py"],
             "dependencies": ["boto3", "pandas", "openpyxl"],
+        },
+        "report_orchestrator": {
+            "path": lambda_dir / "report_orchestrator" / "deployment_package.zip",
+            "expected_files": ["lambda_function.py"],
+            "dependencies": ["boto3"],
         },
     }
 
