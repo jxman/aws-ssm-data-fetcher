@@ -54,6 +54,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         from aws_ssm_fetcher.core.config import Config
         from aws_ssm_fetcher.data_sources.rss_client import RSSClient
         from aws_ssm_fetcher.processors import RegionDiscoverer, ServiceDiscoverer
+        from aws_ssm_fetcher.processors.base import ProcessingContext
 
         # Create Lambda-optimized configuration
         lambda_config = Config.for_lambda("data_fetcher")
@@ -62,9 +63,17 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         # Initialize cache manager with S3 backend
         cache_manager = CacheManager(lambda_config)
 
-        # Initialize data discoverers
-        region_discoverer = RegionDiscoverer(None)
-        service_discoverer = ServiceDiscoverer(None)
+        # Create processing context for data discoverers
+        processing_context = ProcessingContext(
+            config=lambda_config,
+            cache_manager=cache_manager,
+            logger_name="data_fetcher",
+            metadata={"execution_id": execution_id},
+        )
+
+        # Initialize data discoverers with proper context
+        region_discoverer = RegionDiscoverer(processing_context)
+        service_discoverer = ServiceDiscoverer(processing_context)
         rss_client = RSSClient(cache_manager)
 
         # Fetch data
