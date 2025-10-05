@@ -105,9 +105,10 @@ jobs:
         echo '🧹 Cleaning up build artifacts...'
         find lambda_functions/shared_layer/build -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
         find lambda_functions/shared_layer/build -name '*.pyc' -delete 2>/dev/null || true
+        echo '📦 Copying our package...'
+        cp -r lambda_functions/shared_layer/python/aws_ssm_fetcher lambda_functions/shared_layer/build/python/
         echo '✅ Docker build completed for x86_64'
         "
-        cp -r lambda_functions/shared_layer/python/aws_ssm_fetcher lambda_functions/shared_layer/build/python/
         cd lambda_functions/shared_layer/build && zip -r ../layer.zip . -q && cd ../../..
         rm -rf lambda_functions/shared_layer/build
         echo "✅ Linux-compatible layer created"
