@@ -222,8 +222,12 @@ build_heavy_deps_layer() {
     rm -rf "$build_dir"
 }
 
-# Build shared layer first
-build_shared_layer
+# Build shared layer first (unless skipped)
+if [ "${SKIP_SHARED_LAYER:-false}" != "true" ]; then
+    build_shared_layer
+else
+    echo "📋 Skipping shared layer build (already built with Docker)"
+fi
 
 # Build heavy dependencies layer
 build_heavy_deps_layer
