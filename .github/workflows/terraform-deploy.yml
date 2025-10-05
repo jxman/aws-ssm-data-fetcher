@@ -110,7 +110,7 @@ jobs:
         echo '✅ Docker build completed for x86_64'
         "
         cd lambda_functions/shared_layer/build && zip -r ../layer.zip . -q && cd ../../..
-        rm -rf lambda_functions/shared_layer/build
+        sudo rm -rf lambda_functions/shared_layer/build || echo "Build cleanup skipped due to permissions"
         echo "✅ Linux-compatible layer created"
 
     - name: 🏗️ Build Lambda Function Packages
