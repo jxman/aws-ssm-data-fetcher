@@ -45,7 +45,6 @@ build_function_package() {
             --platform linux_x86_64 \
             --implementation cp \
             --python-version 3.11 \
-            --only-binary=:all: \
             --upgrade \
             --quiet
 
@@ -104,7 +103,6 @@ build_shared_layer() {
             --platform linux_x86_64 \
             --implementation cp \
             --python-version 3.11 \
-            --only-binary=:all: \
             --upgrade \
             --quiet
 
@@ -184,7 +182,6 @@ build_heavy_deps_layer() {
         --platform linux_x86_64 \
         --implementation cp \
         --python-version 3.11 \
-        --only-binary=:all: \
         --upgrade \
         --quiet
 
