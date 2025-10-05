@@ -40,8 +40,14 @@ build_function_package() {
 
     # Install dependencies if requirements.txt exists
     if [ -f "$function_dir/requirements.txt" ]; then
-        echo "   Installing dependencies..."
-        pip install -r "$function_dir/requirements.txt" -t "$build_dir" --quiet
+        echo "   Installing dependencies for Lambda runtime..."
+        pip install -r "$function_dir/requirements.txt" -t "$build_dir" \
+            --platform linux_x86_64 \
+            --implementation cp \
+            --python-version 3.11 \
+            --only-binary=:all: \
+            --upgrade \
+            --quiet
 
         # Remove unnecessary files to reduce package size
         find "$build_dir" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
@@ -91,10 +97,16 @@ build_shared_layer() {
         echo "   ✅ Copied aws_ssm_fetcher package"
     fi
 
-    # Install shared dependencies
+    # Install shared dependencies with Lambda-compatible platform
     if [ -f "$layer_dir/requirements.txt" ]; then
-        echo "   Installing shared dependencies..."
-        pip install -r "$layer_dir/requirements.txt" -t "$build_dir/python" --quiet
+        echo "   Installing shared dependencies for Lambda runtime..."
+        pip install -r "$layer_dir/requirements.txt" -t "$build_dir/python" \
+            --platform linux_x86_64 \
+            --implementation cp \
+            --python-version 3.11 \
+            --only-binary=:all: \
+            --upgrade \
+            --quiet
 
         # Remove unnecessary files
         find "$build_dir" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
@@ -166,9 +178,15 @@ build_heavy_deps_layer() {
     rm -rf "$build_dir"
     mkdir -p "$build_dir/python"
 
-    # Install heavy dependencies
-    echo "   Installing heavy dependencies (this may take a while)..."
-    pip install -r "$layer_dir/requirements.txt" -t "$build_dir/python" --quiet
+    # Install heavy dependencies for Lambda runtime
+    echo "   Installing heavy dependencies for Lambda runtime (this may take a while)..."
+    pip install -r "$layer_dir/requirements.txt" -t "$build_dir/python" \
+        --platform linux_x86_64 \
+        --implementation cp \
+        --python-version 3.11 \
+        --only-binary=:all: \
+        --upgrade \
+        --quiet
 
     # Remove unnecessary files to reduce size
     find "$build_dir" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
