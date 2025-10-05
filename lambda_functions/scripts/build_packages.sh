@@ -93,19 +93,34 @@ build_shared_layer() {
         echo "   ✅ Copied aws_ssm_fetcher package"
     fi
 
-    # Install shared dependencies (using compatible approach for Lambda)
+    # Install shared dependencies (using Lambda-compatible approach)
     if [ -f "$layer_dir/requirements.txt" ]; then
-        echo "   Installing shared dependencies..."
-        pip install -r "$layer_dir/requirements.txt" -t "$build_dir/python" \
-            --upgrade \
-            --quiet
+        echo "   Installing shared dependencies for Lambda runtime (Linux x86_64, Python 3.11)..."
 
-        # Remove unnecessary files
+        # First, try to install with platform-specific flags for compiled packages
+        pip install -r "$layer_dir/requirements.txt" -t "$build_dir/python" \
+            --platform linux_x86_64 \
+            --implementation cp \
+            --python-version 3.11 \
+            --only-binary=:all: \
+            --upgrade \
+            --no-deps \
+            --quiet 2>/dev/null || {
+
+            echo "   Platform-specific install failed, trying fallback method..."
+            # Fallback: install without platform constraints (may include source packages)
+            pip install -r "$layer_dir/requirements.txt" -t "$build_dir/python" \
+                --upgrade \
+                --quiet
+        }
+
+        # Remove unnecessary files to reduce package size
         find "$build_dir" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
         find "$build_dir" -type f -name "*.pyc" -delete 2>/dev/null || true
         find "$build_dir" -type f -name "*.pyo" -delete 2>/dev/null || true
         find "$build_dir" -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
         find "$build_dir" -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+        find "$build_dir" -name "*.so" -type f | grep -E "(darwin|macos)" | xargs rm -f 2>/dev/null || true
     fi
 
     # Create layer package

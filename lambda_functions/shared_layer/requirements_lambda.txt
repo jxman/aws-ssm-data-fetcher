@@ -1,0 +1,19 @@
+# Lambda-optimized requirements
+# Using specific versions that have pre-compiled Linux wheels
+
+# Core dependencies
+requests>=2.31.0
+python-dateutil>=2.8.2
+structlog>=23.2.0
+feedparser>=6.0.10
+
+# For Lambda compatibility, use pandas with reduced dependencies
+pandas==2.0.3
+numpy==1.24.4
+
+# Excel support
+openpyxl>=3.1.0
+
+# Optional: Use specific versions known to work with Lambda
+certifi>=2023.7.22
+urllib3>=2.0.0,<3.0
