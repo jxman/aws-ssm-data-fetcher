@@ -65,13 +65,10 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         # Structured processing using real AWS SSM service mapping
         logger.info("Processing raw data using real AWS SSM service mappings...")
 
-        regions_data = raw_data.get("regions", {})
-        services_data = raw_data.get("services", {})
+        # The data structure has regions and services as direct arrays
+        regions_list = raw_data.get("regions", [])
+        services_list = raw_data.get("services", [])
         rss_data = raw_data.get("rss_data", {})
-
-        # Extract region and service lists
-        regions_list = regions_data.get("regions", [])
-        services_list = services_data.get("services", [])
 
         logger.info(
             f"Mapping {len(services_list)} services across {len(regions_list)} regions using real AWS SSM data"

@@ -20,7 +20,8 @@ from .regional_validator import (
     ServiceDiscoverer,
 )
 from .service_mapper import RegionalServiceMapper, ServiceMapper
-from .statistics_analyzer import StatisticsAnalyzer
+
+# from .statistics_analyzer import StatisticsAnalyzer  # Temporarily disabled due to pandas dependency
 
 
 class PipelineStage(Enum):
@@ -144,7 +145,7 @@ class ProcessingPipeline(BaseProcessor):
         self.service_mapper = ServiceMapper(context)
         self.regional_service_mapper = RegionalServiceMapper(context)
         self.data_transformer = DataTransformer(context)
-        self.statistics_analyzer = StatisticsAnalyzer(context)
+        # self.statistics_analyzer = StatisticsAnalyzer(context)  # Temporarily disabled due to pandas dependency
         self.validator = RegionalDataValidator(context)
 
         # Pipeline configuration

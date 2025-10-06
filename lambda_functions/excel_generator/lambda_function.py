@@ -193,14 +193,29 @@ def _generate_all_sheets(
             ]
         )
 
+        # Handle both dictionary and string formats for region_info
+        if isinstance(region_info, dict):
+            region_name = region_info.get("name", region_code)
+            launch_date = region_info.get("launch_date", "N/A")
+            launch_date_source = region_info.get("launch_date_source", "N/A")
+            announcement_url = region_info.get("announcement_url", "N/A")
+            availability_zones = region_info.get("availability_zones", "N/A")
+        else:
+            # Fallback for when region_info is a string or None
+            region_name = region_code
+            launch_date = "N/A"
+            launch_date_source = "N/A"
+            announcement_url = "N/A"
+            availability_zones = "N/A"
+
         region_summary.append(
             {
                 "Region Code": region_code,
-                "Region Name": region_info.get("name", region_code),
-                "Launch Date": region_info.get("launch_date", "N/A"),
-                "Launch Date Source": region_info.get("launch_date_source", "N/A"),
-                "Announcement URL": region_info.get("announcement_url", "N/A"),
-                "Availability Zones": region_info.get("availability_zones", "N/A"),
+                "Region Name": region_name,
+                "Launch Date": launch_date,
+                "Launch Date Source": launch_date_source,
+                "Announcement URL": announcement_url,
+                "Availability Zones": availability_zones,
                 "Service Count": service_count,
             }
         )
@@ -219,12 +234,23 @@ def _generate_all_sheets(
             ]
         )
 
+        # Handle both dictionary and string formats for service_info
+        if isinstance(service_info, dict):
+            service_name = service_info.get("name", service_code)
+            service_category = service_info.get("category", "N/A")
+            service_description = service_info.get("description", "N/A")
+        else:
+            # Fallback for when service_info is a string or None
+            service_name = service_code
+            service_category = "N/A"
+            service_description = "N/A"
+
         service_summary.append(
             {
                 "Service Code": service_code,
-                "Service Name": service_info.get("name", service_code),
-                "Service Category": service_info.get("category", "N/A"),
-                "Description": service_info.get("description", "N/A"),
+                "Service Name": service_name,
+                "Service Category": service_category,
+                "Description": service_description,
                 "Region Count": region_count,
             }
         )
@@ -267,7 +293,8 @@ def _write_excel_file(excel_path: str, sheets_data: Dict[str, List], logger) -> 
     try:
         from openpyxl import Workbook
         from openpyxl.styles import Font, PatternFill
-        from openpyxl.utils.dataframe import dataframe_to_rows
+
+        # Removed dataframe_to_rows import as it brings in pandas/numpy dependencies
     except ImportError as e:
         logger.error(f"Failed to import openpyxl: {e}")
         raise

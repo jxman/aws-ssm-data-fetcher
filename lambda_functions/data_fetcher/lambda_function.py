@@ -150,8 +150,8 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             "message": "Data fetching completed successfully",
             "data_location": f"s3://{config['output_bucket']}/{s3_key}",
             "statistics": {
-                "regions_discovered": len(regions_data.get("regions", [])),
-                "services_discovered": len(services_data.get("services", [])),
+                "regions_discovered": len(regions_data) if regions_data else 0,
+                "services_discovered": len(services_data) if services_data else 0,
                 "rss_entries": len(rss_data) if rss_data else 0,
             },
         }

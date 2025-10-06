@@ -6,8 +6,6 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import pandas as pd
-
 from ..core.error_handling import ErrorHandler, with_retry
 from .base import (
     BaseProcessor,
@@ -15,6 +13,8 @@ from .base import (
     ProcessingError,
     ProcessingValidationError,
 )
+
+# import pandas as pd  # Disabled - will handle pandas-dependent functionality separately
 
 
 class StatisticsAnalysisError(ProcessingError):

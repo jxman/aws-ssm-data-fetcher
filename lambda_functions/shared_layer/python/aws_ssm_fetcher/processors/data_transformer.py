@@ -122,7 +122,7 @@ class DataTransformer(BaseProcessor):
                 f"Failed to apply {transformation_type} transformation: {e}"
             ) from e
 
-    def generate_service_matrix(self, data: List[Dict], **kwargs) -> pd.DataFrame:
+    def generate_service_matrix(self, data: List[Dict], **kwargs) -> List[Dict]:
         """Generate service matrix showing which services are available in which regions.
 
         Args:
@@ -130,29 +130,36 @@ class DataTransformer(BaseProcessor):
             **kwargs: Additional parameters
 
         Returns:
-            DataFrame with services as rows and regions as columns
+            List of dictionaries with services as rows and regions as columns
         """
-        df = pd.DataFrame(data)
-
         # Get unique services and regions
-        services = sorted(df["Service Name"].unique())
-        regions = sorted(df["Region Code"].unique())
+        services = sorted(set(item["Service Name"] for item in data))
+        regions = sorted(set(item["Region Code"] for item in data))
 
         self.logger.info(
             f"Creating service matrix: {len(services)} services × {len(regions)} regions"
         )
 
+        # Create lookup for service-region combinations
+        service_regions_lookup = {}
+        for item in data:
+            service = item["Service Name"]
+            region = item["Region Code"]
+            if service not in service_regions_lookup:
+                service_regions_lookup[service] = set()
+            service_regions_lookup[service].add(region)
+
         matrix_data = []
         for service in services:
             row = {"Service": service}
-            service_regions = set(df[df["Service Name"] == service]["Region Code"])
+            service_regions = service_regions_lookup.get(service, set())
 
             for region in regions:
                 row[region] = "✓" if region in service_regions else "✗"
 
             matrix_data.append(row)
 
-        return pd.DataFrame(matrix_data)
+        return matrix_data
 
     def generate_region_summary(
         self,
@@ -162,7 +169,7 @@ class DataTransformer(BaseProcessor):
         az_data: Dict[str, int] = None,
         all_services: List[str] = None,
         **kwargs,
-    ) -> pd.DataFrame:
+    ) -> List[Dict]:
         """Generate region summary with service counts and metadata.
 
         Args:
@@ -174,20 +181,20 @@ class DataTransformer(BaseProcessor):
             **kwargs: Additional parameters
 
         Returns:
-            DataFrame with region summary information
+            List of dictionaries with region summary information
         """
-        df = pd.DataFrame(data)
         region_names = region_names or {}
         rss_data = rss_data or {}
         az_data = az_data or {}
 
-        self.logger.info(
-            f"Generating region summary for {df['Region Code'].nunique()} regions"
-        )
+        # Get unique regions
+        unique_regions = sorted(set(item["Region Code"] for item in data))
+
+        self.logger.info(f"Generating region summary for {len(unique_regions)} regions")
 
         summary_data = []
-        for region_code in sorted(df["Region Code"].unique()):
-            region_data = df[df["Region Code"] == region_code]
+        for region_code in unique_regions:
+            region_data = [item for item in data if item["Region Code"] == region_code]
             service_count = len(region_data)
 
             # Get RSS metadata for this region
@@ -221,7 +228,7 @@ class DataTransformer(BaseProcessor):
 
             summary_data.append(summary_row)
 
-        return pd.DataFrame(summary_data)
+        return summary_data
 
     def generate_service_summary(
         self,
@@ -229,7 +236,7 @@ class DataTransformer(BaseProcessor):
         all_services: List[str] = None,
         service_names: Dict[str, str] = None,
         **kwargs,
-    ) -> pd.DataFrame:
+    ) -> List[Dict]:
         """Generate service summary with region counts and coverage.
 
         Args:
@@ -239,9 +246,8 @@ class DataTransformer(BaseProcessor):
             **kwargs: Additional parameters
 
         Returns:
-            DataFrame with service summary information
+            List of dictionaries with service summary information
         """
-        df = pd.DataFrame(data)
         service_names = service_names or {}
 
         self.logger.info(f"Generating service summary for discovered services")
@@ -257,7 +263,9 @@ class DataTransformer(BaseProcessor):
                 service_name = service_names.get(service_code, service_code)
 
                 # Count regions where this service appears
-                service_data = df[df["Service Code"] == service_code]
+                service_data = [
+                    item for item in data if item["Service Code"] == service_code
+                ]
                 region_count = len(service_data)
                 coverage_pct = round((region_count / self.total_regions) * 100, 1)
 
@@ -272,13 +280,16 @@ class DataTransformer(BaseProcessor):
                 )
         else:
             # Fallback: analyze only services present in data
-            for service_name in sorted(df["Service Name"].unique()):
-                service_data = df[df["Service Name"] == service_name]
+            unique_services = sorted(set(item["Service Name"] for item in data))
+            for service_name in unique_services:
+                service_data = [
+                    item for item in data if item["Service Name"] == service_name
+                ]
                 region_count = len(service_data)
                 coverage_pct = round((region_count / self.total_regions) * 100, 1)
 
                 # Get service code (take first occurrence)
-                service_code = service_data.iloc[0]["Service Code"]
+                service_code = service_data[0]["Service Code"]
 
                 summary_data.append(
                     {
@@ -289,11 +300,11 @@ class DataTransformer(BaseProcessor):
                     }
                 )
 
-        return pd.DataFrame(summary_data)
+        return summary_data
 
     def generate_statistics(
         self, data: List[Dict], all_services: List[str] = None, **kwargs
-    ) -> pd.DataFrame:
+    ) -> List[Dict]:
         """Generate summary statistics about the data.
 
         Args:
@@ -302,45 +313,96 @@ class DataTransformer(BaseProcessor):
             **kwargs: Additional parameters
 
         Returns:
-            DataFrame with statistics information
+            List of dictionaries with statistics information
         """
-        df = pd.DataFrame(data)
-
         # Use total discovered services count if available
-        total_services = (
-            len(all_services) if all_services else df["Service Name"].nunique()
-        )
+        unique_services = set(item["Service Name"] for item in data)
+        total_services = len(all_services) if all_services else len(unique_services)
+        unique_regions = set(item["Region Code"] for item in data)
 
         self.logger.info(f"Generating statistics for {len(data)} data points")
 
         # Calculate various statistics
-        region_groups = df.groupby("Region Code").size()
-        service_groups = df.groupby("Service Name").size()
+        region_counts = {}
+        for item in data:
+            region = item["Region Code"]
+            region_counts[region] = region_counts.get(region, 0) + 1
+
+        service_counts = {}
+        for item in data:
+            service = item["Service Name"]
+            service_counts[service] = service_counts.get(service, 0) + 1
+
+        # Calculate statistics from counts
+        region_count_values = list(region_counts.values())
+        service_count_values = list(service_counts.values())
+
+        import statistics
 
         stats = [
             ["Generator", "AWS SSM Data Fetcher - Modular Architecture v3.0"],
             ["Generated At", datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
             ["", ""],
             ["Summary Statistics", ""],
-            ["Total Regions", df["Region Code"].nunique()],
+            ["Total Regions", len(unique_regions)],
             ["Total Services", total_services],
-            ["Total Combinations", len(df)],
+            ["Total Combinations", len(data)],
             ["", ""],
             ["Regional Service Distribution", ""],
-            ["Avg Services per Region", round(region_groups.mean(), 1)],
-            ["Max Services (Region)", region_groups.max()],
-            ["Min Services (Region)", region_groups.min()],
-            ["Std Dev Services per Region", round(region_groups.std(), 1)],
+            [
+                "Avg Services per Region",
+                (
+                    round(statistics.mean(region_count_values), 1)
+                    if region_count_values
+                    else 0
+                ),
+            ],
+            [
+                "Max Services (Region)",
+                max(region_count_values) if region_count_values else 0,
+            ],
+            [
+                "Min Services (Region)",
+                min(region_count_values) if region_count_values else 0,
+            ],
+            [
+                "Std Dev Services per Region",
+                (
+                    round(statistics.stdev(region_count_values), 1)
+                    if len(region_count_values) > 1
+                    else 0
+                ),
+            ],
             ["", ""],
             ["Service Distribution", ""],
-            ["Avg Regions per Service", round(service_groups.mean(), 1)],
-            ["Max Regions (Service)", service_groups.max()],
-            ["Min Regions (Service)", service_groups.min()],
-            ["Std Dev Regions per Service", round(service_groups.std(), 1)],
+            [
+                "Avg Regions per Service",
+                (
+                    round(statistics.mean(service_count_values), 1)
+                    if service_count_values
+                    else 0
+                ),
+            ],
+            [
+                "Max Regions (Service)",
+                max(service_count_values) if service_count_values else 0,
+            ],
+            [
+                "Min Regions (Service)",
+                min(service_count_values) if service_count_values else 0,
+            ],
+            [
+                "Std Dev Regions per Service",
+                (
+                    round(statistics.stdev(service_count_values), 1)
+                    if len(service_count_values) > 1
+                    else 0
+                ),
+            ],
         ]
 
-        stats_df = pd.DataFrame(stats, columns=["Metric", "Value"])
-        return stats_df
+        stats_list = [{"Metric": stat[0], "Value": stat[1]} for stat in stats]
+        return stats_list
 
     def generate_pivot_table(
         self,
@@ -350,7 +412,7 @@ class DataTransformer(BaseProcessor):
         values: str = "Service Name",
         aggfunc: str = "count",
         **kwargs,
-    ) -> pd.DataFrame:
+    ) -> Dict[str, Any]:
         """Generate pivot table from the data.
 
         Args:
@@ -362,25 +424,25 @@ class DataTransformer(BaseProcessor):
             **kwargs: Additional parameters
 
         Returns:
-            DataFrame with pivot table
+            Dictionary with pivot table structure
         """
-        df = pd.DataFrame(data)
-
         self.logger.info(
             f"Creating pivot table: rows={rows}, columns={columns}, values={values}"
         )
 
         try:
-            pivot_table = pd.pivot_table(
-                df,
-                index=rows,
-                columns=columns,
-                values=values,
-                aggfunc=aggfunc,
-                fill_value=0,
-            )
+            # Simple pivot table implementation
+            pivot_data = {}
+            for item in data:
+                row_key = item.get(rows)
+                col_key = item.get(columns)
+                if row_key not in pivot_data:
+                    pivot_data[row_key] = {}
+                if col_key not in pivot_data[row_key]:
+                    pivot_data[row_key][col_key] = 0
+                pivot_data[row_key][col_key] += 1
 
-            return pivot_table
+            return pivot_data
 
         except Exception as e:
             raise DataTransformationError(f"Failed to create pivot table: {e}") from e
@@ -398,18 +460,18 @@ class DataTransformer(BaseProcessor):
         Returns:
             Dictionary with coverage analysis results
         """
-        df = pd.DataFrame(data)
-
         self.logger.info("Performing detailed coverage analysis")
+
+        # Get unique values
+        unique_services = set(item["Service Name"] for item in data)
+        unique_regions = set(item["Region Code"] for item in data)
+        total_services = len(all_services) if all_services else len(unique_services)
+        total_regions = len(unique_regions)
 
         # Regional analysis
         region_coverage = {}
-        total_services = (
-            len(all_services) if all_services else df["Service Name"].nunique()
-        )
-
-        for region in df["Region Code"].unique():
-            region_data = df[df["Region Code"] == region]
+        for region in unique_regions:
+            region_data = [item for item in data if item["Region Code"] == region]
             service_count = len(region_data)
             coverage_pct = (service_count / total_services) * 100
 
@@ -420,10 +482,8 @@ class DataTransformer(BaseProcessor):
 
         # Service availability analysis
         service_availability = {}
-        total_regions = df["Region Code"].nunique()
-
-        for service in df["Service Name"].unique():
-            service_data = df[df["Service Name"] == service]
+        for service in unique_services:
+            service_data = [item for item in data if item["Service Name"] == service]
             region_count = len(service_data)
             availability_pct = (region_count / total_regions) * 100
 
@@ -444,11 +504,9 @@ class DataTransformer(BaseProcessor):
             "overview": {
                 "total_regions": total_regions,
                 "total_services": total_services,
-                "total_mappings": len(df),
-                "avg_services_per_region": round(len(df) / total_regions, 1),
-                "avg_regions_per_service": round(
-                    len(df) / df["Service Name"].nunique(), 1
-                ),
+                "total_mappings": len(data),
+                "avg_services_per_region": round(len(data) / total_regions, 1),
+                "avg_regions_per_service": round(len(data) / len(unique_services), 1),
             },
             "regional_coverage": {
                 "by_region": region_coverage,
@@ -458,7 +516,11 @@ class DataTransformer(BaseProcessor):
                     ),
                     "max_coverage": max(coverage_values),
                     "min_coverage": min(coverage_values),
-                    "std_coverage": round(pd.Series(coverage_values).std(), 2),
+                    "std_coverage": (
+                        round(statistics.stdev(coverage_values), 2)
+                        if len(coverage_values) > 1
+                        else 0
+                    ),
                 },
             },
             "service_availability": {
@@ -469,7 +531,11 @@ class DataTransformer(BaseProcessor):
                     ),
                     "max_availability": max(availability_values),
                     "min_availability": min(availability_values),
-                    "std_availability": round(pd.Series(availability_values).std(), 2),
+                    "std_availability": (
+                        round(statistics.stdev(availability_values), 2)
+                        if len(availability_values) > 1
+                        else 0
+                    ),
                 },
             },
         }
@@ -488,14 +554,13 @@ class DataTransformer(BaseProcessor):
         Returns:
             Dictionary with hierarchical structure
         """
-        df = pd.DataFrame(data)
-
         self.logger.info(f"Creating hierarchical structure grouped by {group_by}")
 
         hierarchical_data = {}
-        for group_value in df[group_by].unique():
-            group_data = df[df[group_by] == group_value]
-            hierarchical_data[group_value] = group_data.to_dict("records")
+        unique_groups = set(item[group_by] for item in data)
+        for group_value in unique_groups:
+            group_data = [item for item in data if item[group_by] == group_value]
+            hierarchical_data[group_value] = group_data
 
         return hierarchical_data
 
@@ -509,21 +574,25 @@ class DataTransformer(BaseProcessor):
         Returns:
             Filtered data
         """
-        df = pd.DataFrame(data)
-
         self.logger.info(f"Applying {len(filters)} filters to data")
 
+        filtered_data = data.copy()
+
         for field, value in filters.items():
-            if field not in df.columns:
+            # Check if field exists in any data item
+            if not any(field in item for item in filtered_data):
                 self.logger.warning(f"Filter field '{field}' not found in data")
                 continue
 
             if isinstance(value, list):
-                df = df[df[field].isin(value)]
+                filtered_data = [
+                    item for item in filtered_data if item.get(field) in value
+                ]
             else:
-                df = df[df[field] == value]
+                filtered_data = [
+                    item for item in filtered_data if item.get(field) == value
+                ]
 
-        filtered_data = df.to_dict("records")
         self.logger.info(f"Filtered data: {len(data)} -> {len(filtered_data)} records")
 
         return filtered_data

@@ -18,11 +18,12 @@ from .regional_validator import (
     ValidationError,
 )
 from .service_mapper import RegionalServiceMapper, ServiceMapper
-from .statistics_analyzer import (
-    AvailabilityZoneAnalyzer,
-    StatisticsAnalysisError,
-    StatisticsAnalyzer,
-)
+
+# from .statistics_analyzer import (  # Temporarily disabled due to pandas dependency
+#     AvailabilityZoneAnalyzer,
+#     StatisticsAnalysisError,
+#     StatisticsAnalyzer,
+# )
 
 __all__ = [
     "BaseProcessor",
@@ -32,9 +33,9 @@ __all__ = [
     "RegionalServiceMapper",
     "DataTransformer",
     "DataTransformationError",
-    "StatisticsAnalyzer",
-    "AvailabilityZoneAnalyzer",
-    "StatisticsAnalysisError",
+    # "StatisticsAnalyzer",  # Temporarily disabled due to pandas dependency
+    # "AvailabilityZoneAnalyzer",  # Temporarily disabled due to pandas dependency
+    # "StatisticsAnalysisError",  # Temporarily disabled due to pandas dependency
     "RegionDiscoverer",
     "ServiceDiscoverer",
     "RegionalDataValidator",

@@ -68,6 +68,14 @@ class AWSSSMClient(AWSDataSource):
             self.logger.info(f"Initialized SSM client for region: {self.region}")
         return self._client
 
+    def get_paginator(self, operation_name: str):
+        """Get paginator for the specified operation from the underlying SSM client."""
+        return self.get_client().get_paginator(operation_name)
+
+    def get_parameters_by_path(self, **kwargs):
+        """Call get_parameters_by_path on the underlying SSM client."""
+        return self.get_client().get_parameters_by_path(**kwargs)
+
     def fetch_data(self, **kwargs: Any) -> Any:
         """Fetch data based on type.
 
