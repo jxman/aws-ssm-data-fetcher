@@ -1,5 +1,6 @@
 """Data transformation processor for AWS SSM analysis results."""
 
+import statistics
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 

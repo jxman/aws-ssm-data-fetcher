@@ -74,39 +74,36 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             f"Mapping {len(services_list)} services across {len(regions_list)} regions using real AWS SSM data"
         )
 
-        # Initialize AWS SSM client and processing context for real service mapping
+        # Initialize AWS SSM client and processing context for pipeline processing
         lambda_config = Config.for_lambda("processor")
         # Use boto3 SSM client directly for ServiceMapper (needs get_paginator method)
         ssm_client = boto3.client("ssm")
 
         processing_context = ProcessingContext(config=lambda_config)
-        # Add SSM client to context as an attribute for ServiceMapper
+        # Add SSM client to context as an attribute
         processing_context.ssm_client = ssm_client
 
-        # Use real ServiceMapper to get accurate service-region mappings
+        # Use ProcessingPipeline to get enriched metadata and accurate service-region mappings
         try:
-            service_mapper = ServiceMapper(processing_context)
+            from aws_ssm_fetcher.processors import ProcessingPipeline
 
-            # Try to process all services, but with timeout protection
+            # Create pipeline for processing with enrichment
+            pipeline = ProcessingPipeline(processing_context)
+
+            # Execute the full pipeline to get enriched discovery and mapping results
             logger.info(
-                f"Attempting to process all {len(services_list)} services with real AWS SSM data"
-            )
-            region_services_map = service_mapper.process(services_list)
-            logger.info(
-                f"Successfully mapped services to {len(region_services_map)} regions with real availability data"
+                f"Running full processing pipeline with discovery and enrichment"
             )
 
-            # Convert region_services_map to service_region_mappings format
-            service_region_mappings = {}
-            for region, services in region_services_map.items():
-                for service in services:
-                    if service not in service_region_mappings:
-                        service_region_mappings[service] = []
-                    service_region_mappings[service].append(region)
+            # Execute the pipeline (it will do its own discovery and enrichment)
+            pipeline_results = pipeline.process()
+            logger.info(f"Pipeline processing completed with enriched metadata")
 
-            # Sort regions for each service
-            for service in service_region_mappings:
-                service_region_mappings[service].sort()
+            # Extract service mappings from pipeline results
+            mapping_results = pipeline_results.get("stage_results", {}).get(
+                "mapping", {}
+            )
+            service_region_mappings = mapping_results.get("service_region_mappings", {})
 
             # Report on processing coverage
             processed_services = len(service_region_mappings)
@@ -116,14 +113,18 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             )
 
             logger.info(
-                f"Service mapping coverage: {processed_services}/{total_services} services ({coverage_pct:.1f}%)"
+                f"Pipeline mapping coverage: {processed_services}/{total_services} services ({coverage_pct:.1f}%)"
             )
 
             mapping_stats = {
                 "total_services_mapped": processed_services,
                 "total_services_available": total_services,
                 "coverage_percentage": round(coverage_pct, 1),
-                "total_regions_with_services": len(region_services_map),
+                "total_regions_with_services": (
+                    len(set().union(*service_region_mappings.values()))
+                    if service_region_mappings
+                    else 0
+                ),
                 "total_service_region_combinations": sum(
                     len(regions) for regions in service_region_mappings.values()
                 ),
@@ -184,12 +185,12 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             regions = discovery_results.get("regions", [])
             services = discovery_results.get("services", [])
 
-            # Store metadata
+            # Store enriched metadata (full objects, not just code->name mappings)
             processed_data["metadata"]["regions"] = {
-                r.get("code", r): r.get("name", r) for r in regions
+                r.get("code", r): r for r in regions
             }
             processed_data["metadata"]["services"] = {
-                s.get("code", s): s.get("name", s) for s in services
+                s.get("code", s): s for s in services
             }
 
         # Extract mapping results for final data

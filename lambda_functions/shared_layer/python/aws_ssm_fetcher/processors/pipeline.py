@@ -302,11 +302,15 @@ class ProcessingPipeline(BaseProcessor):
                     config.get("service_discovery_params")
                 )
 
+            # Enrich regions and services with metadata
+            enriched_regions = self._enrich_regions_metadata(discovered_regions)
+            enriched_services = self._enrich_services_metadata(discovered_services)
+
             discovery_results = {
-                "regions": discovered_regions,
-                "services": discovered_services,
-                "region_count": len(discovered_regions),
-                "service_count": len(discovered_services),
+                "regions": enriched_regions,
+                "services": enriched_services,
+                "region_count": len(enriched_regions),
+                "service_count": len(enriched_services),
                 "discovery_metadata": {
                     "regions_metadata": getattr(
                         self.region_discoverer.context, "metadata", {}
@@ -710,6 +714,179 @@ class ProcessingPipeline(BaseProcessor):
             if efficiency_scores
             else 0.5
         )
+
+    def _enrich_regions_metadata(self, region_codes: List[str]) -> List[Dict[str, Any]]:
+        """Enrich region codes with metadata for enhanced reporting.
+
+        Args:
+            region_codes: List of AWS region codes
+
+        Returns:
+            List of region dictionaries with enriched metadata
+        """
+        # AWS region metadata mapping
+        region_metadata = {
+            "us-east-1": {
+                "name": "US East (N. Virginia)",
+                "launch_date": "2006-08-25",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2006/08/25/amazon-s3-availability/",
+                "availability_zones": "6",
+                "description": "US East (Northern Virginia)",
+            },
+            "us-east-2": {
+                "name": "US East (Ohio)",
+                "launch_date": "2016-10-17",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2016/10/aws-region-us-east-ohio/",
+                "availability_zones": "3",
+                "description": "US East (Ohio)",
+            },
+            "us-west-1": {
+                "name": "US West (N. California)",
+                "launch_date": "2009-12-10",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2009/12/10/amazon-ec2-us-west/",
+                "availability_zones": "3",
+                "description": "US West (Northern California)",
+            },
+            "us-west-2": {
+                "name": "US West (Oregon)",
+                "launch_date": "2011-11-08",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2011/11/08/amazon-ec2-us-west-oregon/",
+                "availability_zones": "4",
+                "description": "US West (Oregon)",
+            },
+            "eu-west-1": {
+                "name": "Europe (Ireland)",
+                "launch_date": "2007-12-10",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2007/12/10/amazon-ec2-europe/",
+                "availability_zones": "3",
+                "description": "Europe (Ireland)",
+            },
+            "eu-central-1": {
+                "name": "Europe (Frankfurt)",
+                "launch_date": "2014-10-23",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2014/10/23/aws-region-germany/",
+                "availability_zones": "3",
+                "description": "Europe (Frankfurt)",
+            },
+            "ap-southeast-1": {
+                "name": "Asia Pacific (Singapore)",
+                "launch_date": "2010-04-28",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2010/04/28/amazon-ec2-asia-pacific/",
+                "availability_zones": "3",
+                "description": "Asia Pacific (Singapore)",
+            },
+            "ap-northeast-1": {
+                "name": "Asia Pacific (Tokyo)",
+                "launch_date": "2011-03-02",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2011/03/02/amazon-ec2-asia-pacific-tokyo/",
+                "availability_zones": "3",
+                "description": "Asia Pacific (Tokyo)",
+            },
+        }
+
+        enriched_regions = []
+        for region_code in region_codes:
+            metadata = region_metadata.get(region_code, {})
+            region_obj = {
+                "code": region_code,
+                "name": metadata.get("name", region_code),
+                "launch_date": metadata.get("launch_date", "N/A"),
+                "launch_date_source": metadata.get("launch_date_source", "N/A"),
+                "announcement_url": metadata.get("announcement_url", "N/A"),
+                "availability_zones": metadata.get("availability_zones", "N/A"),
+                "description": metadata.get("description", region_code),
+            }
+            enriched_regions.append(region_obj)
+
+        return enriched_regions
+
+    def _enrich_services_metadata(
+        self, service_codes: List[str]
+    ) -> List[Dict[str, Any]]:
+        """Enrich service codes with metadata for enhanced reporting.
+
+        Args:
+            service_codes: List of AWS service codes
+
+        Returns:
+            List of service dictionaries with enriched metadata
+        """
+        # AWS service metadata mapping (subset of common services)
+        service_metadata = {
+            "ec2": {
+                "name": "Amazon Elastic Compute Cloud",
+                "category": "Compute",
+                "description": "Scalable virtual servers in the cloud",
+            },
+            "s3": {
+                "name": "Amazon Simple Storage Service",
+                "category": "Storage",
+                "description": "Object storage built to store and retrieve any amount of data",
+            },
+            "rds": {
+                "name": "Amazon Relational Database Service",
+                "category": "Database",
+                "description": "Managed relational database service",
+            },
+            "lambda": {
+                "name": "AWS Lambda",
+                "category": "Compute",
+                "description": "Run code without thinking about servers",
+            },
+            "iam": {
+                "name": "AWS Identity and Access Management",
+                "category": "Security & Identity",
+                "description": "Manage access to AWS services and resources",
+            },
+            "cloudformation": {
+                "name": "AWS CloudFormation",
+                "category": "Management & Governance",
+                "description": "Model and provision AWS resources using infrastructure as code",
+            },
+            "cloudwatch": {
+                "name": "Amazon CloudWatch",
+                "category": "Management & Governance",
+                "description": "Monitoring and observability service",
+            },
+            "sns": {
+                "name": "Amazon Simple Notification Service",
+                "category": "Application Integration",
+                "description": "Managed messaging service for microservices and serverless applications",
+            },
+            "sqs": {
+                "name": "Amazon Simple Queue Service",
+                "category": "Application Integration",
+                "description": "Managed message queuing service",
+            },
+            "dynamodb": {
+                "name": "Amazon DynamoDB",
+                "category": "Database",
+                "description": "Fast and flexible NoSQL database service",
+            },
+        }
+
+        enriched_services = []
+        for service_code in service_codes:
+            metadata = service_metadata.get(service_code, {})
+            service_obj = {
+                "code": service_code,
+                "name": metadata.get("name", service_code),
+                "category": metadata.get("category", "Other"),
+                "description": metadata.get(
+                    "description", f"AWS {service_code} service"
+                ),
+            }
+            enriched_services.append(service_obj)
+
+        return enriched_services
 
 
 class PipelineOrchestrator:

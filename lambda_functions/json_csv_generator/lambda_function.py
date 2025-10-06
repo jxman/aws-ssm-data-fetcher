@@ -77,6 +77,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         # Generate JSON report
         logger.info("Generating JSON report...")
         json_report = {
+            "regional_services_data": regional_services_data,
             "metadata": {
                 "generated_at": datetime.now()
                 .isoformat()
@@ -86,8 +87,10 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 "unique_regions": len(regions_map),
                 "unique_services": len(services_map),
                 "source": "AWS SSM Parameter Store",
+                "regions": regions_map,
+                "services": services_map,
+                "rss_data": rss_data,
             },
-            "data": regional_services_data,
         }
 
         json_path = os.path.join(temp_output_dir, "aws_regions_services.json")
