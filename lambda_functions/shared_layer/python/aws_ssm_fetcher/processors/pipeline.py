@@ -249,12 +249,18 @@ class ProcessingPipeline(BaseProcessor):
             )
             results["transformation"] = transformation_results
 
-            # Stage 4: Statistical Analysis (if enabled)
-            if config.get("enable_statistics", True):
+            # Stage 4: Statistical Analysis (if enabled and statistics_analyzer is available)
+            if config.get("enable_statistics", True) and hasattr(
+                self, "statistics_analyzer"
+            ):
                 analysis_results = self._execute_analysis_stage(
                     context, config, mapping_results
                 )
                 results["analysis"] = analysis_results
+            else:
+                self.logger.info(
+                    "Skipping analysis stage - statistics analyzer not available"
+                )
 
             # Stage 5: Data Validation (if enabled)
             if config.get("enable_validation", True):
@@ -343,21 +349,39 @@ class ProcessingPipeline(BaseProcessor):
 
             services = discovery_results["services"]
 
+            # Extract service codes from enriched service objects for mapping
+            # ServiceMapper expects list of strings, not enriched objects
+            service_codes = []
+            for service in services:
+                if isinstance(service, dict):
+                    service_codes.append(service.get("code", service))
+                else:
+                    service_codes.append(service)
+
             # Use regional service mapper for enhanced mapping
             region_services_map = self.regional_service_mapper.process_with_cache(
-                services
+                service_codes
             )
 
-            # Convert to flat service-region mappings
-            service_region_mappings = []
+            # Convert region-services map to service-regions format expected by processor
+            # Transform from {"region": ["service1", "service2"]} to {"service1": ["region1", "region2"]}
+            service_region_mappings = {}
             for region_code, region_services in region_services_map.items():
                 for service_code in region_services:
+                    if service_code not in service_region_mappings:
+                        service_region_mappings[service_code] = []
+                    service_region_mappings[service_code].append(region_code)
+
+            # Also create the flat list format for backwards compatibility
+            service_region_combinations = []
+            for service_code, regions in service_region_mappings.items():
+                for region_code in regions:
                     # Get service name (fallback to code if not available)
                     service_name = (
                         service_code  # Could be enhanced with service name lookup
                     )
 
-                    service_region_mappings.append(
+                    service_region_combinations.append(
                         {
                             "Region Code": region_code,
                             "Service Code": service_code,
@@ -366,15 +390,18 @@ class ProcessingPipeline(BaseProcessor):
                     )
 
             # Get additional mapping statistics
-            coverage_stats = self.service_mapper.get_coverage_stats(services)
+            coverage_stats = self.service_mapper.get_coverage_stats(service_codes)
             regional_analysis = (
-                self.regional_service_mapper.analyze_regional_distribution(services)
+                self.regional_service_mapper.analyze_regional_distribution(
+                    service_codes
+                )
             )
 
             mapping_results = {
                 "service_region_mappings": service_region_mappings,
+                "service_region_combinations": service_region_combinations,
                 "region_services_map": region_services_map,
-                "total_mappings": len(service_region_mappings),
+                "total_mappings": len(service_region_combinations),
                 "coverage_statistics": coverage_stats,
                 "regional_analysis": regional_analysis,
                 "mapping_metadata": {
@@ -384,7 +411,7 @@ class ProcessingPipeline(BaseProcessor):
 
             context.complete_stage(PipelineStage.MAPPING, mapping_results)
             self.logger.info(
-                f"Mapping completed: {len(service_region_mappings)} service-region combinations"
+                f"Mapping completed: {len(service_region_combinations)} service-region combinations"
             )
 
             return mapping_results
@@ -402,24 +429,25 @@ class ProcessingPipeline(BaseProcessor):
         try:
             self.logger.info("Executing data transformation stage...")
 
-            service_region_mappings = mapping_results["service_region_mappings"]
+            # Use the list format for data transformer (it expects a list of mappings)
+            service_region_combinations = mapping_results["service_region_combinations"]
 
             # Generate multiple data transformations
             transformations = {}
 
             # Service matrix
             transformations["service_matrix"] = self.data_transformer.process(
-                service_region_mappings, transformation_type="service_matrix"
+                service_region_combinations, transformation_type="service_matrix"
             )
 
             # Region summary
             transformations["region_summary"] = self.data_transformer.process(
-                service_region_mappings, transformation_type="region_summary"
+                service_region_combinations, transformation_type="region_summary"
             )
 
             # Service summary
             transformations["service_summary"] = self.data_transformer.process(
-                service_region_mappings,
+                service_region_combinations,
                 transformation_type="service_summary",
                 all_services=mapping_results.get("region_services_map", {}).get(
                     "services", []
@@ -428,12 +456,12 @@ class ProcessingPipeline(BaseProcessor):
 
             # Statistics
             transformations["statistics"] = self.data_transformer.process(
-                service_region_mappings, transformation_type="statistics"
+                service_region_combinations, transformation_type="statistics"
             )
 
             # Coverage analysis
             transformations["coverage_analysis"] = self.data_transformer.process(
-                service_region_mappings, transformation_type="coverage_analysis"
+                service_region_combinations, transformation_type="coverage_analysis"
             )
 
             transformation_results = {
@@ -526,11 +554,12 @@ class ProcessingPipeline(BaseProcessor):
         try:
             self.logger.info("Executing data validation stage...")
 
-            service_region_mappings = mapping_results["service_region_mappings"]
+            # Use the list format for validator (it expects a list of mappings)
+            service_region_combinations = mapping_results["service_region_combinations"]
 
             # Perform comprehensive validation
             validation_result = self.validator.process(
-                service_region_mappings, validation_type="comprehensive"
+                service_region_combinations, validation_type="comprehensive"
             )
 
             validation_results = {

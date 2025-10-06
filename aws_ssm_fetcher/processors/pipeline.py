@@ -20,7 +20,8 @@ from .regional_validator import (
     ServiceDiscoverer,
 )
 from .service_mapper import RegionalServiceMapper, ServiceMapper
-from .statistics_analyzer import StatisticsAnalyzer
+
+# from .statistics_analyzer import StatisticsAnalyzer  # Temporarily disabled due to pandas dependency
 
 
 class PipelineStage(Enum):
@@ -144,7 +145,7 @@ class ProcessingPipeline(BaseProcessor):
         self.service_mapper = ServiceMapper(context)
         self.regional_service_mapper = RegionalServiceMapper(context)
         self.data_transformer = DataTransformer(context)
-        self.statistics_analyzer = StatisticsAnalyzer(context)
+        # self.statistics_analyzer = StatisticsAnalyzer(context)  # Temporarily disabled due to pandas dependency
         self.validator = RegionalDataValidator(context)
 
         # Pipeline configuration
@@ -248,12 +249,18 @@ class ProcessingPipeline(BaseProcessor):
             )
             results["transformation"] = transformation_results
 
-            # Stage 4: Statistical Analysis (if enabled)
-            if config.get("enable_statistics", True):
+            # Stage 4: Statistical Analysis (if enabled and statistics_analyzer is available)
+            if config.get("enable_statistics", True) and hasattr(
+                self, "statistics_analyzer"
+            ):
                 analysis_results = self._execute_analysis_stage(
                     context, config, mapping_results
                 )
                 results["analysis"] = analysis_results
+            else:
+                self.logger.info(
+                    "Skipping analysis stage - statistics analyzer not available"
+                )
 
             # Stage 5: Data Validation (if enabled)
             if config.get("enable_validation", True):
@@ -301,11 +308,15 @@ class ProcessingPipeline(BaseProcessor):
                     config.get("service_discovery_params")
                 )
 
+            # Enrich regions and services with metadata
+            enriched_regions = self._enrich_regions_metadata(discovered_regions)
+            enriched_services = self._enrich_services_metadata(discovered_services)
+
             discovery_results = {
-                "regions": discovered_regions,
-                "services": discovered_services,
-                "region_count": len(discovered_regions),
-                "service_count": len(discovered_services),
+                "regions": enriched_regions,
+                "services": enriched_services,
+                "region_count": len(enriched_regions),
+                "service_count": len(enriched_services),
                 "discovery_metadata": {
                     "regions_metadata": getattr(
                         self.region_discoverer.context, "metadata", {}
@@ -338,21 +349,39 @@ class ProcessingPipeline(BaseProcessor):
 
             services = discovery_results["services"]
 
+            # Extract service codes from enriched service objects for mapping
+            # ServiceMapper expects list of strings, not enriched objects
+            service_codes = []
+            for service in services:
+                if isinstance(service, dict):
+                    service_codes.append(service.get("code", service))
+                else:
+                    service_codes.append(service)
+
             # Use regional service mapper for enhanced mapping
             region_services_map = self.regional_service_mapper.process_with_cache(
-                services
+                service_codes
             )
 
-            # Convert to flat service-region mappings
-            service_region_mappings = []
+            # Convert region-services map to service-regions format expected by processor
+            # Transform from {"region": ["service1", "service2"]} to {"service1": ["region1", "region2"]}
+            service_region_mappings = {}
             for region_code, region_services in region_services_map.items():
                 for service_code in region_services:
+                    if service_code not in service_region_mappings:
+                        service_region_mappings[service_code] = []
+                    service_region_mappings[service_code].append(region_code)
+
+            # Also create the flat list format for backwards compatibility
+            service_region_combinations = []
+            for service_code, regions in service_region_mappings.items():
+                for region_code in regions:
                     # Get service name (fallback to code if not available)
                     service_name = (
                         service_code  # Could be enhanced with service name lookup
                     )
 
-                    service_region_mappings.append(
+                    service_region_combinations.append(
                         {
                             "Region Code": region_code,
                             "Service Code": service_code,
@@ -361,15 +390,18 @@ class ProcessingPipeline(BaseProcessor):
                     )
 
             # Get additional mapping statistics
-            coverage_stats = self.service_mapper.get_coverage_stats(services)
+            coverage_stats = self.service_mapper.get_coverage_stats(service_codes)
             regional_analysis = (
-                self.regional_service_mapper.analyze_regional_distribution(services)
+                self.regional_service_mapper.analyze_regional_distribution(
+                    service_codes
+                )
             )
 
             mapping_results = {
                 "service_region_mappings": service_region_mappings,
+                "service_region_combinations": service_region_combinations,
                 "region_services_map": region_services_map,
-                "total_mappings": len(service_region_mappings),
+                "total_mappings": len(service_region_combinations),
                 "coverage_statistics": coverage_stats,
                 "regional_analysis": regional_analysis,
                 "mapping_metadata": {
@@ -379,7 +411,7 @@ class ProcessingPipeline(BaseProcessor):
 
             context.complete_stage(PipelineStage.MAPPING, mapping_results)
             self.logger.info(
-                f"Mapping completed: {len(service_region_mappings)} service-region combinations"
+                f"Mapping completed: {len(service_region_combinations)} service-region combinations"
             )
 
             return mapping_results
@@ -397,24 +429,25 @@ class ProcessingPipeline(BaseProcessor):
         try:
             self.logger.info("Executing data transformation stage...")
 
-            service_region_mappings = mapping_results["service_region_mappings"]
+            # Use the list format for data transformer (it expects a list of mappings)
+            service_region_combinations = mapping_results["service_region_combinations"]
 
             # Generate multiple data transformations
             transformations = {}
 
             # Service matrix
             transformations["service_matrix"] = self.data_transformer.process(
-                service_region_mappings, transformation_type="service_matrix"
+                service_region_combinations, transformation_type="service_matrix"
             )
 
             # Region summary
             transformations["region_summary"] = self.data_transformer.process(
-                service_region_mappings, transformation_type="region_summary"
+                service_region_combinations, transformation_type="region_summary"
             )
 
             # Service summary
             transformations["service_summary"] = self.data_transformer.process(
-                service_region_mappings,
+                service_region_combinations,
                 transformation_type="service_summary",
                 all_services=mapping_results.get("region_services_map", {}).get(
                     "services", []
@@ -423,12 +456,12 @@ class ProcessingPipeline(BaseProcessor):
 
             # Statistics
             transformations["statistics"] = self.data_transformer.process(
-                service_region_mappings, transformation_type="statistics"
+                service_region_combinations, transformation_type="statistics"
             )
 
             # Coverage analysis
             transformations["coverage_analysis"] = self.data_transformer.process(
-                service_region_mappings, transformation_type="coverage_analysis"
+                service_region_combinations, transformation_type="coverage_analysis"
             )
 
             transformation_results = {
@@ -521,11 +554,12 @@ class ProcessingPipeline(BaseProcessor):
         try:
             self.logger.info("Executing data validation stage...")
 
-            service_region_mappings = mapping_results["service_region_mappings"]
+            # Use the list format for validator (it expects a list of mappings)
+            service_region_combinations = mapping_results["service_region_combinations"]
 
             # Perform comprehensive validation
             validation_result = self.validator.process(
-                service_region_mappings, validation_type="comprehensive"
+                service_region_combinations, validation_type="comprehensive"
             )
 
             validation_results = {
@@ -709,6 +743,179 @@ class ProcessingPipeline(BaseProcessor):
             if efficiency_scores
             else 0.5
         )
+
+    def _enrich_regions_metadata(self, region_codes: List[str]) -> List[Dict[str, Any]]:
+        """Enrich region codes with metadata for enhanced reporting.
+
+        Args:
+            region_codes: List of AWS region codes
+
+        Returns:
+            List of region dictionaries with enriched metadata
+        """
+        # AWS region metadata mapping
+        region_metadata = {
+            "us-east-1": {
+                "name": "US East (N. Virginia)",
+                "launch_date": "2006-08-25",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2006/08/25/amazon-s3-availability/",
+                "availability_zones": "6",
+                "description": "US East (Northern Virginia)",
+            },
+            "us-east-2": {
+                "name": "US East (Ohio)",
+                "launch_date": "2016-10-17",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2016/10/aws-region-us-east-ohio/",
+                "availability_zones": "3",
+                "description": "US East (Ohio)",
+            },
+            "us-west-1": {
+                "name": "US West (N. California)",
+                "launch_date": "2009-12-10",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2009/12/10/amazon-ec2-us-west/",
+                "availability_zones": "3",
+                "description": "US West (Northern California)",
+            },
+            "us-west-2": {
+                "name": "US West (Oregon)",
+                "launch_date": "2011-11-08",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2011/11/08/amazon-ec2-us-west-oregon/",
+                "availability_zones": "4",
+                "description": "US West (Oregon)",
+            },
+            "eu-west-1": {
+                "name": "Europe (Ireland)",
+                "launch_date": "2007-12-10",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2007/12/10/amazon-ec2-europe/",
+                "availability_zones": "3",
+                "description": "Europe (Ireland)",
+            },
+            "eu-central-1": {
+                "name": "Europe (Frankfurt)",
+                "launch_date": "2014-10-23",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2014/10/23/aws-region-germany/",
+                "availability_zones": "3",
+                "description": "Europe (Frankfurt)",
+            },
+            "ap-southeast-1": {
+                "name": "Asia Pacific (Singapore)",
+                "launch_date": "2010-04-28",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2010/04/28/amazon-ec2-asia-pacific/",
+                "availability_zones": "3",
+                "description": "Asia Pacific (Singapore)",
+            },
+            "ap-northeast-1": {
+                "name": "Asia Pacific (Tokyo)",
+                "launch_date": "2011-03-02",
+                "launch_date_source": "AWS Documentation",
+                "announcement_url": "https://aws.amazon.com/about-aws/whats-new/2011/03/02/amazon-ec2-asia-pacific-tokyo/",
+                "availability_zones": "3",
+                "description": "Asia Pacific (Tokyo)",
+            },
+        }
+
+        enriched_regions = []
+        for region_code in region_codes:
+            metadata = region_metadata.get(region_code, {})
+            region_obj = {
+                "code": region_code,
+                "name": metadata.get("name", region_code),
+                "launch_date": metadata.get("launch_date", "N/A"),
+                "launch_date_source": metadata.get("launch_date_source", "N/A"),
+                "announcement_url": metadata.get("announcement_url", "N/A"),
+                "availability_zones": metadata.get("availability_zones", "N/A"),
+                "description": metadata.get("description", region_code),
+            }
+            enriched_regions.append(region_obj)
+
+        return enriched_regions
+
+    def _enrich_services_metadata(
+        self, service_codes: List[str]
+    ) -> List[Dict[str, Any]]:
+        """Enrich service codes with metadata for enhanced reporting.
+
+        Args:
+            service_codes: List of AWS service codes
+
+        Returns:
+            List of service dictionaries with enriched metadata
+        """
+        # AWS service metadata mapping (subset of common services)
+        service_metadata = {
+            "ec2": {
+                "name": "Amazon Elastic Compute Cloud",
+                "category": "Compute",
+                "description": "Scalable virtual servers in the cloud",
+            },
+            "s3": {
+                "name": "Amazon Simple Storage Service",
+                "category": "Storage",
+                "description": "Object storage built to store and retrieve any amount of data",
+            },
+            "rds": {
+                "name": "Amazon Relational Database Service",
+                "category": "Database",
+                "description": "Managed relational database service",
+            },
+            "lambda": {
+                "name": "AWS Lambda",
+                "category": "Compute",
+                "description": "Run code without thinking about servers",
+            },
+            "iam": {
+                "name": "AWS Identity and Access Management",
+                "category": "Security & Identity",
+                "description": "Manage access to AWS services and resources",
+            },
+            "cloudformation": {
+                "name": "AWS CloudFormation",
+                "category": "Management & Governance",
+                "description": "Model and provision AWS resources using infrastructure as code",
+            },
+            "cloudwatch": {
+                "name": "Amazon CloudWatch",
+                "category": "Management & Governance",
+                "description": "Monitoring and observability service",
+            },
+            "sns": {
+                "name": "Amazon Simple Notification Service",
+                "category": "Application Integration",
+                "description": "Managed messaging service for microservices and serverless applications",
+            },
+            "sqs": {
+                "name": "Amazon Simple Queue Service",
+                "category": "Application Integration",
+                "description": "Managed message queuing service",
+            },
+            "dynamodb": {
+                "name": "Amazon DynamoDB",
+                "category": "Database",
+                "description": "Fast and flexible NoSQL database service",
+            },
+        }
+
+        enriched_services = []
+        for service_code in service_codes:
+            metadata = service_metadata.get(service_code, {})
+            service_obj = {
+                "code": service_code,
+                "name": metadata.get("name", service_code),
+                "category": metadata.get("category", "Other"),
+                "description": metadata.get(
+                    "description", f"AWS {service_code} service"
+                ),
+            }
+            enriched_services.append(service_obj)
+
+        return enriched_services
 
 
 class PipelineOrchestrator:
