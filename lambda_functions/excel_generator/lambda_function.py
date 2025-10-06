@@ -288,6 +288,29 @@ def _generate_all_sheets(
     return sheets
 
 
+def _extract_excel_value(value):
+    """Extract a string value safe for Excel from various data types."""
+    if isinstance(value, dict):
+        # For enriched metadata objects, prefer 'name' over 'code'
+        if "name" in value:
+            return value["name"]
+        elif "code" in value:
+            return value["code"]
+        else:
+            # Return first available string value
+            for v in value.values():
+                if isinstance(v, str):
+                    return v
+            return str(value)
+    elif isinstance(value, list):
+        # Convert lists to comma-separated string
+        return ", ".join(str(item) for item in value)
+    elif value is None:
+        return ""
+    else:
+        return str(value)
+
+
 def _write_excel_file(excel_path: str, sheets_data: Dict[str, List], logger) -> None:
     """Write Excel file with all sheets and formatting."""
     try:
@@ -317,7 +340,9 @@ def _write_excel_file(excel_path: str, sheets_data: Dict[str, List], logger) -> 
             # Statistics sheet is a list of lists
             for row_idx, row_data in enumerate(sheet_data, 1):
                 for col_idx, value in enumerate(row_data, 1):
-                    cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                    cell = ws.cell(
+                        row=row_idx, column=col_idx, value=_extract_excel_value(value)
+                    )
                     if col_idx == 1:  # First column (labels)
                         cell.font = Font(bold=True)
         else:
@@ -335,9 +360,9 @@ def _write_excel_file(excel_path: str, sheets_data: Dict[str, List], logger) -> 
                 # Write data rows
                 for row_idx, row_data in enumerate(sheet_data, 2):
                     for col_idx, header in enumerate(headers, 1):
-                        ws.cell(
-                            row=row_idx, column=col_idx, value=row_data.get(header, "")
-                        )
+                        raw_value = row_data.get(header, "")
+                        excel_value = _extract_excel_value(raw_value)
+                        ws.cell(row=row_idx, column=col_idx, value=excel_value)
 
         # Auto-adjust column widths
         for column in ws.columns:

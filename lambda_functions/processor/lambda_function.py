@@ -143,25 +143,17 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 "fallback_used": True,
             }
 
-        pipeline_results = {
-            "success": True,
-            "pipeline_execution": {
-                "total_stages": 3,
-                "completed_stages": 3,
-                "processing_time_seconds": 2.0,
-                "status": "completed",
-            },
-            "stage_results": {
-                "discovery": {
-                    "regions": [{"code": r, "name": r} for r in regions_list],
-                    "services": [{"code": s, "name": s} for s in services_list],
-                },
-                "mapping": {
-                    "service_region_mappings": service_region_mappings,
-                    "mapping_stats": mapping_stats,
-                },
-            },
-        }
+        # Note: pipeline_results already contains enriched discovery data
+        # Don't overwrite with basic mappings - the pipeline already provides enriched data
+
+        # Only update the mapping results if needed
+        if "mapping" not in pipeline_results.get("stage_results", {}):
+            if "stage_results" not in pipeline_results:
+                pipeline_results["stage_results"] = {}
+            pipeline_results["stage_results"]["mapping"] = {
+                "service_region_mappings": service_region_mappings,
+                "mapping_stats": mapping_stats,
+            }
 
         # Prepare processed data package
         processed_data = {
@@ -201,13 +193,25 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             # Convert to regional services format
             regional_services = []
             for service, regions in service_mappings.items():
-                service_name = processed_data["metadata"]["services"].get(
-                    service, service
+                service_metadata = processed_data["metadata"]["services"].get(
+                    service, {"code": service, "name": service}
                 )
+                # Extract service name from enriched metadata object
+                if isinstance(service_metadata, dict):
+                    service_name = service_metadata.get("name", service)
+                else:
+                    service_name = service_metadata
+
                 for region in regions:
-                    region_name = processed_data["metadata"]["regions"].get(
-                        region, region
+                    region_metadata = processed_data["metadata"]["regions"].get(
+                        region, {"code": region, "name": region}
                     )
+                    # Extract region name from enriched metadata object
+                    if isinstance(region_metadata, dict):
+                        region_name = region_metadata.get("name", region)
+                    else:
+                        region_name = region_metadata
+
                     regional_services.append(
                         {
                             "Region Code": region,
@@ -221,10 +225,17 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
 
         # Store processed data in S3 for report generator
         processed_s3_key = f"processed-data/{execution_id}/processed_data.json"
+
+        # Custom JSON serializer to handle datetime objects
+        def json_serializer(obj):
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
         s3_client.put_object(
             Bucket=s3_bucket,
             Key=processed_s3_key,
-            Body=json.dumps(processed_data, indent=2),
+            Body=json.dumps(processed_data, indent=2, default=json_serializer),
             ContentType="application/json",
         )
 
@@ -248,14 +259,26 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 Payload=json.dumps(generator_event),
             )
 
-        # Return success response
+        # Return success response (ensure all data is JSON serializable)
+        pipeline_summary = pipeline_results.get("pipeline_execution", {})
+
+        # Clean pipeline summary to remove datetime objects
+        serializable_pipeline_summary = {
+            "total_stages": pipeline_summary.get("total_stages", 0),
+            "completed_stages": pipeline_summary.get("completed_stages", 0),
+            "processing_time_seconds": pipeline_summary.get(
+                "processing_time_seconds", 0
+            ),
+            "status": pipeline_summary.get("status", "unknown"),
+        }
+
         response = {
             "status": "success",
             "statusCode": 200,
             "execution_id": execution_id,
             "message": "Data processing completed successfully",
             "processed_data_location": f"s3://{s3_bucket}/{processed_s3_key}",
-            "pipeline_summary": pipeline_results.get("pipeline_execution", {}),
+            "pipeline_summary": serializable_pipeline_summary,
             "statistics": {
                 "regions_processed": len(processed_data["metadata"]["regions"]),
                 "services_processed": len(processed_data["metadata"]["services"]),
