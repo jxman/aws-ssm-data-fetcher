@@ -594,7 +594,7 @@ class AWSSSMClient(AWSDataSource):
         Returns:
             List of discovered region codes
         """
-        cache_key = "discovered_regions_enhanced"
+        cache_key = "discovered_regions_enhanced_v2"  # v2 includes EC2 merge fix
 
         # Try cache first
         cached_data = self.get_cached_data(cache_key)
@@ -651,6 +651,9 @@ class AWSSSMClient(AWSDataSource):
 
             discovered_regions.sort()
             self.logger.info(f"Discovered {len(discovered_regions)} regions from SSM")
+
+            # Merge with EC2 regions to ensure completeness
+            discovered_regions = self._merge_with_ec2_regions(discovered_regions)
 
             # Cache the results
             self.cache_data(cache_key, discovered_regions)
@@ -813,3 +816,50 @@ class AWSSSMClient(AWSDataSource):
         except Exception as e:
             self.logger.error(f"Failed to map services to regions: {e}")
             return {}
+
+    def _merge_with_ec2_regions(self, ssm_regions: List[str]) -> List[str]:
+        """Merge SSM discovered regions with EC2 regions to ensure completeness.
+
+        SSM parameters may be missing some regions (like eu-west-3), but EC2
+        describe-regions includes all standard commercial regions. We merge both
+        sources to get the complete list.
+
+        Args:
+            ssm_regions: Regions discovered from SSM parameters
+
+        Returns:
+            Complete list of regions from both sources
+        """
+        try:
+            # Create EC2 client to get all regions
+            ec2_client = (
+                self.aws_session.client("ec2", region_name=self.region)
+                if self.aws_session
+                else boto3.client("ec2", region_name=self.region)
+            )
+
+            # Get all regions from EC2 (including opt-in regions)
+            response = ec2_client.describe_regions(AllRegions=True)
+            ec2_regions = [region["RegionName"] for region in response["Regions"]]
+
+            # Merge both lists (SSM has specialized regions, EC2 has complete commercial regions)
+            ssm_set = set(ssm_regions)
+            ec2_set = set(ec2_regions)
+            complete_regions = sorted(list(ssm_set.union(ec2_set)))
+
+            added_regions = ec2_set - ssm_set
+            if added_regions:
+                self.logger.info(
+                    f"Added {len(added_regions)} regions from EC2: {sorted(added_regions)}"
+                )
+
+            self.logger.info(
+                f"Complete region list: {len(complete_regions)} regions total"
+            )
+            return complete_regions
+
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to merge with EC2 regions: {e}, using SSM regions only"
+            )
+            return ssm_regions
