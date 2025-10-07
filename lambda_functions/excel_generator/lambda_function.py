@@ -224,34 +224,39 @@ def _generate_all_sheets(
 
     # Sheet 4: Service Summary
     service_summary = []
+    total_regions = len(all_regions)
+
     for service_code in all_services:
         service_info = services_map.get(service_code, {})
-        region_count = len(
-            [
-                item
-                for item in regional_services_data
-                if item.get("service_code") == service_code
-            ]
+
+        # Count unique regions where this service is available
+        service_regions = set()
+        for item in regional_services_data:
+            if item.get("service_code") == service_code:
+                service_regions.add(item.get("region_code"))
+
+        region_count = len(service_regions)
+        coverage_percentage = (
+            round((region_count / total_regions * 100), 1) if total_regions > 0 else 0
         )
 
         # Handle both dictionary and string formats for service_info
+        # Use description as the service name (contains full descriptive name)
         if isinstance(service_info, dict):
-            service_name = service_info.get("name", service_code)
-            service_category = service_info.get("category", "N/A")
-            service_description = service_info.get("description", "N/A")
+            # Prefer description over name for full descriptive service name
+            service_name = service_info.get(
+                "description", service_info.get("name", service_code)
+            )
         else:
             # Fallback for when service_info is a string or None
             service_name = service_code
-            service_category = "N/A"
-            service_description = "N/A"
 
         service_summary.append(
             {
                 "Service Code": service_code,
                 "Service Name": service_name,
-                "Service Category": service_category,
-                "Description": service_description,
                 "Region Count": region_count,
+                "Coverage %": coverage_percentage,
             }
         )
 
