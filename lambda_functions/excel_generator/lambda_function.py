@@ -165,8 +165,8 @@ def _generate_all_sheets(
     # Create service availability matrix
     service_region_map = {}
     for item in regional_services_data:
-        service = item.get("service_code", "")
-        region = item.get("region_code", "")
+        service = item.get("Service Code", "")
+        region = item.get("Region Code", "")
         if service not in service_region_map:
             service_region_map[service] = set()
         service_region_map[service].add(region)
@@ -189,7 +189,7 @@ def _generate_all_sheets(
             [
                 item
                 for item in regional_services_data
-                if item.get("region_code") == region_code
+                if item.get("Region Code") == region_code
             ]
         )
 
@@ -232,8 +232,8 @@ def _generate_all_sheets(
         # Count unique regions where this service is available
         service_regions = set()
         for item in regional_services_data:
-            if item.get("service_code") == service_code:
-                service_regions.add(item.get("region_code"))
+            if item.get("Service Code") == service_code:
+                service_regions.add(item.get("Region Code"))
 
         region_count = len(service_regions)
         coverage_percentage = (
