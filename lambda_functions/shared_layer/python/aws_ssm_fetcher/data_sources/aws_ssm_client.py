@@ -602,7 +602,7 @@ class AWSSSMClient(AWSDataSource):
         Returns:
             List of discovered region codes
         """
-        cache_key = "discovered_regions_enhanced_v2"  # v2 includes EC2 merge fix
+        cache_key = "discovered_regions_enhanced_v3"  # v3 forces fresh discovery
 
         # Try cache first
         cached_data = self.get_cached_data(cache_key)
@@ -633,6 +633,15 @@ class AWSSSMClient(AWSDataSource):
             self.logger.info(
                 f"Found {len(discovered_regions)} regions from direct path"
             )
+
+            # Log if eu-west-3 was found
+            if "eu-west-3" in discovered_regions:
+                self.logger.info("✅ eu-west-3 found in region discovery")
+            else:
+                self.logger.warning("❌ eu-west-3 NOT found in region discovery")
+                # Log EU regions for debugging
+                eu_regions = [r for r in discovered_regions if r.startswith("eu-")]
+                self.logger.info(f"EU regions found: {eu_regions}")
 
             # If we didn't find many regions, try targeted parameter sampling
             if len(discovered_regions) < 10:

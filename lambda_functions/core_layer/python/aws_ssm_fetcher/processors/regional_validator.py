@@ -124,7 +124,9 @@ class RegionDiscoverer(BaseProcessor):
 
         # Set default discovery parameters
         params = input_data or {}
-        max_pages = params.get("max_pages", 10)
+        max_pages = params.get(
+            "max_pages", 100
+        )  # Increased to ensure we get all regions
         use_recursive = params.get("recursive", True)
         validate_regions = params.get("validate_regions", True)
 
@@ -206,9 +208,14 @@ class RegionDiscoverer(BaseProcessor):
 
                 pages_processed += 1
                 if pages_processed >= max_pages:
+                    self.logger.warning(
+                        f"Hit max_pages limit ({max_pages}) during region discovery"
+                    )
                     break
 
-            self.logger.debug(f"Directory discovery found {len(regions)} regions")
+            self.logger.info(
+                f"Directory discovery processed {pages_processed} pages and found {len(regions)} regions"
+            )
 
         except Exception as e:
             self.logger.warning(f"Directory discovery failed: {e}")
