@@ -663,6 +663,9 @@ class AWSSSMClient(AWSDataSource):
             # Merge with EC2 regions to ensure completeness
             discovered_regions = self._merge_with_ec2_regions(discovered_regions)
 
+            # Ensure critical missing regions are included (known SSM parameter gaps)
+            discovered_regions = self._ensure_critical_regions(discovered_regions)
+
             # Cache the results
             self.cache_data(cache_key, discovered_regions)
 

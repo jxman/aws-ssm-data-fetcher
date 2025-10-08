@@ -61,17 +61,17 @@ class RegionDiscoverer(BaseProcessor):
 
         # Known AWS region patterns for validation
         self.region_patterns = [
-            r"^us-(east|west)-[12]$",  # US regions
-            r"^eu-(west|central|north|south)-[12]$",  # Europe regions
-            r"^ap-(northeast|southeast|south|east)-[1-7]$",  # Asia Pacific regions
-            r"^ca-(central|west)-[12]$",  # Canada regions
-            r"^sa-east-[12]$",  # South America regions
-            r"^af-south-[12]$",  # Africa regions
-            r"^me-(south|central)-[12]$",  # Middle East regions
-            r"^il-central-[12]$",  # Israel regions
-            r"^mx-central-[12]$",  # Mexico regions
-            r"^cn-(north|northwest)-[12]$",  # China regions
-            r"^us-gov-(east|west)-[12]$",  # Government regions
+            r"^us-(east|west)-\d+$",  # US regions (supports any digits)
+            r"^eu-(west|central|north|south)-\d+$",  # Europe regions (supports any digits)
+            r"^ap-(northeast|southeast|south|east)-\d+$",  # Asia Pacific regions (supports any digits)
+            r"^ca-(central|west)-\d+$",  # Canada regions (supports any digits)
+            r"^sa-east-\d+$",  # South America regions (supports any digits)
+            r"^af-south-\d+$",  # Africa regions (supports any digits)
+            r"^me-(south|central)-\d+$",  # Middle East regions (supports any digits)
+            r"^il-central-\d+$",  # Israel regions (supports any digits)
+            r"^mx-central-\d+$",  # Mexico regions (supports any digits)
+            r"^cn-(north|northwest)-\d+$",  # China regions (supports any digits)
+            r"^us-gov-(east|west)-\d+$",  # Government regions (supports any digits)
         ]
 
     def validate_input(self, input_data: Any) -> bool:
@@ -153,6 +153,9 @@ class RegionDiscoverer(BaseProcessor):
                     f"Validated {len(validated_regions)}/{len(discovered_regions)} discovered regions"
                 )
                 discovered_regions = validated_regions
+
+            # Ensure critical regions are included (fix for missing eu-west-3)
+            discovered_regions = self._ensure_critical_regions(discovered_regions)
 
             self.logger.info(
                 f"Successfully discovered {len(discovered_regions)} regions"
@@ -259,9 +262,33 @@ class RegionDiscoverer(BaseProcessor):
             if is_valid and re.match(r"^[a-z0-9-]+$", region) and len(region) >= 8:
                 validated_regions.append(region)
             else:
-                self.logger.debug(f"Rejected invalid region format: {region}")
+                self.logger.info(
+                    f"Rejected invalid region: {region} (pattern_match={is_valid}, format_ok={re.match(r'^[a-z0-9-]+$', region) and len(region) >= 8})"
+                )
 
         return validated_regions
+
+    def _ensure_critical_regions(self, regions: List[str]) -> List[str]:
+        """Ensure critical AWS regions that might be missing are included."""
+        critical_regions = [
+            "eu-west-3",  # Europe (Paris) - often missing from SSM parameters
+        ]
+
+        regions_set = set(regions)
+        added_count = 0
+
+        for region in critical_regions:
+            if region not in regions_set:
+                regions_set.add(region)
+                added_count += 1
+                self.logger.info(f"Added missing critical region: {region}")
+
+        if added_count > 0:
+            self.logger.info(
+                f"Added {added_count} critical regions to ensure completeness"
+            )
+
+        return sorted(list(regions_set))
 
 
 class ServiceDiscoverer(BaseProcessor):
