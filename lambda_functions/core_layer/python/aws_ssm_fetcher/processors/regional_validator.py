@@ -157,7 +157,19 @@ class RegionDiscoverer(BaseProcessor):
                 discovered_regions = validated_regions
 
             # Ensure critical regions are included (fix for missing eu-west-3)
+            self.logger.warning(
+                f"🚀 About to call _ensure_critical_regions with {len(discovered_regions)} regions"
+            )
             discovered_regions = self._ensure_critical_regions(discovered_regions)
+            self.logger.warning(
+                f"🏁 After _ensure_critical_regions: {len(discovered_regions)} regions"
+            )
+
+            # FINAL FIX: Ensure eu-west-3 is included if missing
+            if "eu-west-3" not in discovered_regions:
+                self.logger.warning("🔧 FINAL FIX: Adding missing eu-west-3 region")
+                discovered_regions.append("eu-west-3")
+                discovered_regions.sort()
 
             self.logger.info(
                 f"Successfully discovered {len(discovered_regions)} regions"
@@ -259,6 +271,8 @@ class RegionDiscoverer(BaseProcessor):
         """Validate discovered regions against known patterns."""
         validated_regions = []
 
+        self.logger.info(f"Starting validation of {len(regions)} discovered regions")
+
         for region in regions:
             # Check against known region patterns
             is_valid = any(
@@ -266,17 +280,34 @@ class RegionDiscoverer(BaseProcessor):
             )
 
             # Additional validation: must be alphanumeric with hyphens only
-            if is_valid and re.match(r"^[a-z0-9-]+$", region) and len(region) >= 8:
+            format_ok = re.match(r"^[a-z0-9-]+$", region) and len(region) >= 8
+
+            if is_valid and format_ok:
                 validated_regions.append(region)
             else:
-                self.logger.info(
-                    f"Rejected invalid region: {region} (pattern_match={is_valid}, format_ok={re.match(r'^[a-z0-9-]+$', region) and len(region) >= 8})"
+                self.logger.warning(
+                    f"REJECTED REGION: {region} (pattern_match={is_valid}, format_ok={format_ok})"
                 )
+
+        self.logger.info(
+            f"Validation complete: {len(validated_regions)}/{len(regions)} regions passed"
+        )
+
+        # Log specific check for eu-west-3
+        if "eu-west-3" in regions:
+            if "eu-west-3" in validated_regions:
+                self.logger.info("✅ eu-west-3 passed validation")
+            else:
+                self.logger.error("❌ eu-west-3 FAILED validation")
+        else:
+            self.logger.warning("eu-west-3 not found in discovered regions")
 
         return validated_regions
 
     def _ensure_critical_regions(self, regions: List[str]) -> List[str]:
         """Ensure critical AWS regions that might be missing are included."""
+        self.logger.info(f"_ensure_critical_regions called with {len(regions)} regions")
+
         critical_regions = [
             "eu-west-3",  # Europe (Paris) - often missing from SSM parameters
         ]
@@ -284,18 +315,31 @@ class RegionDiscoverer(BaseProcessor):
         regions_set = set(regions)
         added_count = 0
 
+        # Log current state for debugging
+        has_eu_west_3 = "eu-west-3" in regions_set
+        self.logger.info(f"eu-west-3 already in regions: {has_eu_west_3}")
+
         for region in critical_regions:
             if region not in regions_set:
                 regions_set.add(region)
                 added_count += 1
-                self.logger.info(f"Added missing critical region: {region}")
+                self.logger.warning(f"🔧 ADDED missing critical region: {region}")
+            else:
+                self.logger.info(f"✅ Critical region {region} already present")
 
         if added_count > 0:
-            self.logger.info(
-                f"Added {added_count} critical regions to ensure completeness"
+            self.logger.warning(
+                f"🔧 Added {added_count} critical regions to ensure completeness"
             )
+        else:
+            self.logger.info("All critical regions already present")
 
-        return sorted(list(regions_set))
+        final_regions = sorted(list(regions_set))
+        self.logger.info(
+            f"_ensure_critical_regions returning {len(final_regions)} regions"
+        )
+
+        return final_regions
 
 
 class ServiceDiscoverer(BaseProcessor):
