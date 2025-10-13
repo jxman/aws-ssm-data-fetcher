@@ -1,8 +1,22 @@
 # AWS SSM Data Fetcher - Modular Lambda Architecture
 
-A complete modular Python package for fetching AWS service and region data from AWS Systems Manager Parameter Store and generating comprehensive reports. **✅ FULLY OPERATIONAL IN AWS - Production serverless infrastructure generating real data!**
+> **🔴 PROJECT DECOMMISSIONED - October 13, 2025**
+>
+> **This project has been decommissioned and all AWS infrastructure has been destroyed.**
+>
+> **Status:**
+> - ❌ All AWS Lambda functions deleted
+> - ❌ Step Functions state machine removed
+> - ❌ S3 buckets and data deleted
+> - ❌ CloudWatch dashboards and alarms removed
+> - ❌ IAM roles and policies cleaned up
+> - ❌ GitHub Actions workflows disabled
+>
+> **This repository is now archived for reference purposes only.**
+>
+> ---
 
-## 🎯 Current Status: PRODUCTION OPERATIONAL
+## 🎯 Previous Status: PRODUCTION OPERATIONAL (DECOMMISSIONED)
 
 **Project Progress: 100% Complete** | **Pipeline Fully Functional** | **Real Data Generation Active** ✅
 
